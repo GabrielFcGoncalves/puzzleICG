@@ -5,6 +5,8 @@ import { Room } from './objects/Room.js';
 import { PuzzleBox } from './objects/PuzzleBox.js';
 import { Candle } from './objects/Candle.js';
 import { WallChandelier } from './objects/WallChandelier.js';
+import { Stand } from './objects/Stand.js';
+import { Flashlight } from './objects/Flashlight.js';
 import { createRenderer, handleResize } from './systems/Renderer.js';
 
 import { handleDoubleClick } from './listeners/DoubleClick.js';
@@ -46,6 +48,7 @@ scene.add(focalLight.target);
 // Desk Area Light
 const deskLight = new THREE.PointLight(0xffaa55, 60, 10);
 deskLight.position.set(3.5, 0.5, 1.5); 
+deskLight.castShadow = true;
 scene.add(deskLight);
 
 // Oil Lamp above cabinet
@@ -57,6 +60,9 @@ scene.add(lampLight);
 // Bright Moonlight fill
 const moonLight = new THREE.DirectionalLight(0x99aaff, 3.5);
 moonLight.position.set(-6, 6, -6);
+moonLight.castShadow = true;
+moonLight.shadow.mapSize.width = 1024;
+moonLight.shadow.mapSize.height = 1024;
 scene.add(moonLight);
 
 // --- Wall mounted Chandeliers ---
@@ -78,10 +84,14 @@ lampLight.position.set(0, 2.3, -4);
 // Additional light for the left side
 const leftLight = new THREE.PointLight(0xffaa55, 40, 8);
 leftLight.position.set(-4, 1.8, -1);
+leftLight.castShadow = true;
 scene.add(leftLight);
 
 // Flashlight (Warmer) remaining as is
 const flashlight = new THREE.SpotLight(0xffd488, 30, 8, Math.PI / 6, 0.5, 2);
+flashlight.castShadow = true; // Use shadows for camera light
+flashlight.shadow.mapSize.width = 1024;
+flashlight.shadow.mapSize.height = 1024;
 camera.add(flashlight);
 flashlight.position.set(0, 0, 0);
 const fTarget = new THREE.Object3D(); 
@@ -96,10 +106,15 @@ const inspectionScene = new THREE.Scene();
 inspectionScene.background = new THREE.Color(0x000000);
 const inspectionCamera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 100);
 const inspectionControls = new OrbitControls(inspectionCamera, renderer.domElement);
-inspectionScene.add(new THREE.AmbientLight(0xffffff, 1.5));
-const iLight = new THREE.DirectionalLight(0xffffff, 3);
-iLight.position.set(2, 2, 2);
+inspectionScene.add(new THREE.AmbientLight(0xffffff, 3.5)); // Much stronger ambient
+const iLight = new THREE.DirectionalLight(0xffffff, 6); // Strong key light
+iLight.position.set(2, 5, 2);
 inspectionScene.add(iLight);
+
+const iFillLight = new THREE.DirectionalLight(0xffffff, 2.5); // Soft fill light
+iFillLight.position.set(-2, -2, 2);
+inspectionScene.add(iFillLight);
+
 let currentInspectedGroup = null;
 
 // --- Axis Helper Scene (Compass) ---
@@ -134,13 +149,35 @@ cabinet.drawerGroups[0].add(pBox.group);
 pBox.setPosition(0, -0.9, -0.4); // Centered inside the vault space
 pBox.group.scale.set(1.2, 1.2, 1.2); // Slightly bigger for better visibility
 
-// Ensure all meshes cast and receive shadows for a dramatic theme
-scene.traverse(node => {
-    if (node.isMesh) {
-        node.castShadow = true;
-        node.receiveShadow = true;
-    }
-});
+// --- Pedestal Workspace ---
+const stand = new Stand(scene);
+stand.setPosition(-1.1, 0.07, 0); // Further left
+stand.group.scale.set(1.5, 1.5, 1.5);
+
+const flashlightObj = new Flashlight();
+flashlightObj.group.rotation.y = Math.PI / 2;
+flashlightObj.group.scale.set(1.1, 1.1, 1.1);
+flashlightObj.setPosition(0.3, 0.4, -0.4); // On the top shelf inside the vault
+cabinet.drawerGroups[0].add(flashlightObj.group);
+
+// --- Utils ---
+const enableShadows = (obj) => {
+    obj.traverse(node => {
+        if (node.isMesh) {
+            // Ignore invisible interaction spheres (hitboxes)
+            if (node.material && node.material.opacity > 0) {
+                node.castShadow = true;
+                node.receiveShadow = true;
+            } else {
+                 node.castShadow = false;
+                 node.receiveShadow = false;
+            }
+        }
+    });
+};
+
+// Initial scene-wide shadow enable
+enableShadows(scene);
 
 // --- State Management ---
 const state = {
@@ -338,32 +375,72 @@ window.addEventListener('mouseup', (e) => {
         mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
         raycaster.setFromCamera(mouse, camera);
 
-        const hits = raycaster.intersectObjects(cabinet.group.children, true);
+        const hits = raycaster.intersectObjects(scene.children, true);
         if (hits.length > 0) {
-            let targetGroup = hits[0].object;
-            while (targetGroup && targetGroup.parent !== cabinet.group) {
-                targetGroup = targetGroup.parent;
+            let hitObj = hits[0].object;
+
+            // Check for Cabinet Drop (Key)
+            let cabinetSearch = hitObj;
+            let targetCabinetDrawer = null;
+            while (cabinetSearch) {
+                if (cabinet.drawerGroups.includes(cabinetSearch)) {
+                    targetCabinetDrawer = cabinetSearch;
+                    break;
+                }
+                cabinetSearch = cabinetSearch.parent;
             }
 
-            if (targetGroup) {
-                const drawerIndex = cabinet.drawerGroups.indexOf(targetGroup);
-                // Merged drawer is now index 0
+            if (targetCabinetDrawer) {
+                const drawerIndex = cabinet.drawerGroups.indexOf(targetCabinetDrawer);
                 if (drawerIndex === 0 && itemData.name === 'Old Key' && !cabinet.isKeyInserted) {
                     cabinet.isKeyInserted = true;
                     cabinet.keyPivot.visible = true;
                     statusElement.innerText = "STATUS: KEY INSERTED - DRAG IT TO TURN";
-
-                    // Remove from inventory
                     state.inventory.splice(state.draggedInventoryIndex, 1);
-                    // Update UI slots
-                    const slots = document.querySelectorAll('.slot');
-                    slots.forEach(s => (s.innerHTML = '', s.title = ''));
-                    state.inventory.forEach((id, idx) => {
-                        slots[idx].innerHTML = `<img src="${id.thumbnail}" style="width: 100%; height: 100%; pointer-events: none; object-fit: contain;">`;
-                        slots[idx].title = id.name;
-                    });
                 }
             }
+
+            // Check for Stand Drop (Flashlight)
+            let standSearch = hitObj;
+            let targetStand = null;
+            while (standSearch) {
+                if (standSearch.userData.isStand) {
+                    targetStand = standSearch;
+                    break;
+                }
+                standSearch = standSearch.parent;
+            }
+
+            if (targetStand && itemData.name === 'Old Flashlight') {
+                const f = new Flashlight();
+                f.setPosition(-1.1, 0.55, 0); 
+                f.group.scale.set(1.2, 1.2, 1.2);
+                f.group.rotation.y = Math.PI;
+                f.group.rotation.z = Math.PI/14;
+                
+                // --- Permanently Mount ---
+                // Once placed, it's no longer an item that can be picked up
+                f.group.userData.isItem = false;
+                f.group.userData.isPickupable = false;
+                f.group.userData.isStaticPuzzlePart = true;
+                f.group.userData.isMountedFlashlight = true;
+                f.group.userData.itemInstance = f; // Keep reference for toggle()
+                
+                scene.add(f.group);
+                enableShadows(f.group); // Ensure its light and meshes interact with shadows correctly
+                
+                statusElement.innerText = "STATUS: FLASHLIGHT MOUNTED ON STAND";
+                state.inventory.splice(state.draggedInventoryIndex, 1);
+            }
+
+            // Update UI slots
+            const slots = document.querySelectorAll('.slot');
+            slots.forEach(s => (s.innerHTML = '', s.title = ''));
+            state.inventory.forEach((id, idx) => {
+                const imgHTML = `<img src="${id.thumbnail}" style="width: 100%; height: 100%; pointer-events: none; object-fit: contain;">`;
+                slots[idx].innerHTML = imgHTML;
+                slots[idx].title = id.name;
+            });
         }
 
         state.draggedInventoryIndex = -1;

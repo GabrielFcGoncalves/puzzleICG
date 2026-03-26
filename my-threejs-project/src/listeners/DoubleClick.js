@@ -30,6 +30,7 @@ export function handleDoubleClick(event, ctx) {
                 search.userData.drawerIndex !== undefined || 
                 search.userData.isRotatable || 
                 search.userData.isFooting ||
+                search.userData.isFlashlightSwitch ||
                 search.userData.isCabinetBody) {
                 interactiveHit = { hit, entity: search };
                 break;
@@ -111,6 +112,22 @@ export function handleDoubleClick(event, ctx) {
         state.isZoomedOnFoot = false;
         const worldPos = new THREE.Vector3();
         target.getWorldPosition(worldPos);
+
+        if (target.userData.isStand) {
+            // Handle-style close-up, but with free rotation
+            zoomTo(worldPos, 1.5, null, new THREE.Vector3(0, 0.4, 0.8));
+            controls.minAzimuthAngle = -Infinity;
+            controls.maxAzimuthAngle = Infinity;
+            return;
+        }
+
+        if (target.userData.isMountedFlashlight) {
+            // Very close zoom on the mounted flashlight
+            zoomTo(worldPos, 0.8, null, new THREE.Vector3(0, 0.3, 0.5));
+            controls.minAzimuthAngle = -Infinity;
+            controls.maxAzimuthAngle = Infinity;
+            return;
+        }
 
         if (target.userData.isLock) {
             zoomTo(worldPos, 0.8, null, new THREE.Vector3(0, 0.2, 0.6));

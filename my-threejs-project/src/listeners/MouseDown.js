@@ -1,11 +1,44 @@
 import * as THREE from 'three';
 
 export function handleMouseDown(event, ctx) {
-    const { mouse, raycaster, camera, cabinet, state, controls, renderer, intersectionPoint, offset } = ctx;
+    const { mouse, raycaster, camera, scene, cabinet, state, controls, renderer, intersectionPoint, offset } = ctx;
 
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     raycaster.setFromCamera(mouse, camera);
+
+    // --- Specialized Single-Click Interactions (Flashlight Switch) ---
+    const allHits = raycaster.intersectObjects(scene.children, true);
+    for (let i = 0; i < allHits.length; i++) {
+        const hitObj = allHits[i].object;
+        let search = hitObj;
+        while (search) {
+            if (search.userData.isFlashlightSwitch) {
+                // Only allow clicking the switch if the flashlight is mounted on the stand
+                let groupSearch = search;
+                let isMounted = false;
+                while (groupSearch) {
+                    if (groupSearch.userData.isMountedFlashlight) {
+                        isMounted = true;
+                        break;
+                    }
+                    groupSearch = groupSearch.parent;
+                }
+
+                if (isMounted) {
+                    let instSearch = search;
+                    while (instSearch && !instSearch.userData.itemInstance) {
+                        instSearch = instSearch.parent;
+                    }
+                    if (instSearch && instSearch.userData.itemInstance && instSearch.userData.itemInstance.toggle) {
+                        instSearch.userData.itemInstance.toggle();
+                        return; // Toggle found, stop processing MouseDown
+                    }
+                }
+            }
+            search = search.parent;
+        }
+    }
 
     const wheelHits = raycaster.intersectObjects(cabinet.wheels, true);
     const handleHits = raycaster.intersectObjects(ctx.getHandles(), true);

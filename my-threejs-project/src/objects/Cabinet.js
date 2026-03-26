@@ -64,11 +64,17 @@ export class Cabinet {
         bottom.position.y = -H / 2 + thickness / 2;
         this.box.add(top, bottom);
 
-        // Internal Shelf (between Vault and Bottom drawer at y = -0.5)
-        const shelf = new THREE.Mesh(new THREE.BoxGeometry(W - thickness * 2, thickness, D - thickness), bodyMat);
-        shelf.position.y = -0.5;
-        shelf.position.z = thickness / 2;
-        this.box.add(shelf);
+        // Internal Shelf (separating middle and bottom drawers)
+        const shelf1 = new THREE.Mesh(new THREE.BoxGeometry(W - thickness * 2, thickness, D - thickness), bodyMat);
+        shelf1.position.y = -0.5;
+        shelf1.position.z = thickness / 2;
+        this.box.add(shelf1);
+
+        // Internal Divider Shelf (splitting the vault space in two: 1/4 to 3/4)
+        const shelf2 = new THREE.Mesh(new THREE.BoxGeometry(W - thickness * 2, thickness, D - thickness), bodyMat);
+        shelf2.position.y = 0.75; // 3/4 height relative to the middle drawer range [0, 1]
+        shelf2.position.z = thickness / 2;
+        this.box.add(shelf2);
 
         this.box.userData = { isCabinetBody: true };
         this.group.add(this.box);
