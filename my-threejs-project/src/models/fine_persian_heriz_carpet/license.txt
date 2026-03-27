@@ -1,0 +1,11 @@
+Model Information:
+* title:	Fine Persian Heriz Carpet
+* source:	https://sketchfab.com/3d-models/fine-persian-heriz-carpet-e198f1099ac34274ae2c867226adde79
+* author:	mfb64 (https://sketchfab.com/mfb64)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Fine Persian Heriz Carpet" (https://sketchfab.com/3d-models/fine-persian-heriz-carpet-e198f1099ac34274ae2c867226adde79) by mfb64 (https://sketchfab.com/mfb64) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

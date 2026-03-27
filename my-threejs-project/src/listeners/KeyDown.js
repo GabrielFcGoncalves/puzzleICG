@@ -9,4 +9,11 @@ export function handleKeyDown(event, ctx) {
         const msg = state.isHintMode ? "HINT MODE: ON" : "HINT MODE: OFF";
         ctx.statusElement.innerText = `STATUS: ${msg}`;
     }
+    if (event.code === 'Enter') {
+        ctx.detachCamera();
+    }
+    if (event.code === 'Escape') {
+        state.camClampingDisabled = false;
+        ctx.resetZoom();
+    }
 }

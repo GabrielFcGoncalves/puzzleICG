@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import Stats from 'three/addons/libs/stats.module.js';
 import { Cabinet } from './objects/Cabinet.js';
 import { Room } from './objects/Room.js';
 import { PuzzleBox } from './objects/PuzzleBox.js';
@@ -17,6 +18,7 @@ import { handleKeyDown } from './listeners/KeyDown.js';
 import { handleResize as handleWindowResize } from './listeners/Resize.js';
 import { handleContextMenu } from './listeners/ContextMenu.js';
 import { handleControlsStart } from './listeners/ControlsHandlers.js';
+import { VisibilityTool } from './utils/VisibilityTool.js';
 
 // --- Scene and Camera ---
 const scene = new THREE.Scene();
@@ -31,39 +33,37 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enablePan = false;
 controls.maxPolarAngle = Math.PI * 0.6; // Prevents camera from going below the floor horizon
 
+// --- Performance Stats ---
+const stats = new Stats();
+document.body.appendChild(stats.dom);
+
 // --- Lights ---
 const ambientLight = new THREE.AmbientLight(0x666699, 1.2); // Much brighter ambiance
 scene.add(ambientLight);
 
-// Powerful Spotlight on cabinet
-const focalLight = new THREE.SpotLight(0xffea99, 250, 35, Math.PI / 4, 0.4, 0.5);
-focalLight.position.set(2, 9, -1.5); // Adjusted for back wall position
-focalLight.castShadow = true;
-focalLight.shadow.mapSize.width = 2048;
-focalLight.shadow.mapSize.height = 2048;
-scene.add(focalLight);
-focalLight.target.position.set(0, 0, -3.5);
-scene.add(focalLight.target);
-
-// Desk Area Light
-const deskLight = new THREE.PointLight(0xffaa55, 60, 10);
-deskLight.position.set(3.5, 0.5, 1.5); 
+// Desk Area Light (Main Spotlight)
+const deskLight = new THREE.SpotLight(0xa1874f, 100, 15, Math.PI/6, 0.5, 1);
+deskLight.position.set(0, 4.5, 3.2); 
+deskLight.target.position.set(0, -1, -1.5); 
+scene.add(deskLight.target);
 deskLight.castShadow = true;
+deskLight.shadow.autoUpdate = false; 
+deskLight.shadow.bias = -0.0001;
+deskLight.shadow.normalBias = 0.02;
+deskLight.shadow.mapSize.width = 512;
+deskLight.shadow.mapSize.height = 512;
 scene.add(deskLight);
 
 // Oil Lamp above cabinet
 const lampLight = new THREE.PointLight(0xff9900, 35, 10);
-lampLight.position.set(0, 3, -3.5); // Directly above new cabinet position
+lampLight.position.set(0, 2.3, -4); 
 lampLight.castShadow = true;
+lampLight.shadow.autoUpdate = false; // Static shadow map
+lampLight.shadow.bias = -0.0001;
+lampLight.shadow.normalBias = 0.02;
+lampLight.shadow.mapSize.width = 512;
+lampLight.shadow.mapSize.height = 512;
 scene.add(lampLight);
-
-// Bright Moonlight fill
-const moonLight = new THREE.DirectionalLight(0x99aaff, 3.5);
-moonLight.position.set(-6, 6, -6);
-moonLight.castShadow = true;
-moonLight.shadow.mapSize.width = 1024;
-moonLight.shadow.mapSize.height = 1024;
-scene.add(moonLight);
 
 // --- Wall mounted Chandeliers ---
 const chanRight = new WallChandelier(scene);
@@ -78,20 +78,27 @@ const chanBack = new WallChandelier(scene);
 chanBack.setPosition(0, 2, -4.9);
 
 // Move the existing lights to match the new chandeliers
-deskLight.position.set(4, 1.8, 1); 
+// deskLight is positioned at (0, 4.5, -1.5)
 lampLight.position.set(0, 2.3, -4); 
 
 // Additional light for the left side
 const leftLight = new THREE.PointLight(0xffaa55, 40, 8);
 leftLight.position.set(-4, 1.8, -1);
 leftLight.castShadow = true;
+leftLight.shadow.autoUpdate = false; // Static shadow map
+leftLight.shadow.bias = -0.0001;
+leftLight.shadow.normalBias = 0.02;
+leftLight.shadow.mapSize.width = 512;
+leftLight.shadow.mapSize.height = 512;
 scene.add(leftLight);
 
 // Flashlight (Warmer) remaining as is
 const flashlight = new THREE.SpotLight(0xffd488, 30, 8, Math.PI / 6, 0.5, 2);
 flashlight.castShadow = true; // Use shadows for camera light
-flashlight.shadow.mapSize.width = 1024;
-flashlight.shadow.mapSize.height = 1024;
+flashlight.shadow.mapSize.width = 512;
+flashlight.shadow.mapSize.height = 512;
+flashlight.shadow.bias = -0.0001;
+flashlight.shadow.normalBias = 0.02;
 camera.add(flashlight);
 flashlight.position.set(0, 0, 0);
 const fTarget = new THREE.Object3D(); 
@@ -165,9 +172,25 @@ const enableShadows = (obj) => {
     obj.traverse(node => {
         if (node.isMesh) {
             // Ignore invisible interaction spheres (hitboxes)
-            if (node.material && node.material.opacity > 0) {
-                node.castShadow = true;
-                node.receiveShadow = true;
+            if (node.material && (node.material.opacity === undefined || node.material.opacity > 0)) {
+                
+                // --- Selective Shadow Logic ---
+                const parent = node.parent;
+                const isRoomPart = node.userData.isRoomPart || (parent && parent.userData.isRoomPart);
+                const isSmallProp = node.userData.isSmallProp || (parent && parent.userData.isSmallProp);
+                const isFurniture = node.userData.isFurniture || (parent && parent.userData.isFurniture);
+
+                if (isRoomPart) {
+                    node.castShadow = false;
+                    node.receiveShadow = true;
+                } else if (isSmallProp) {
+                    node.castShadow = true;
+                    node.receiveShadow = false;
+                } else {
+                    // Default for furniture, cabinet, etc.
+                    node.castShadow = true;
+                    node.receiveShadow = true;
+                }
             } else {
                  node.castShadow = false;
                  node.receiveShadow = false;
@@ -175,6 +198,9 @@ const enableShadows = (obj) => {
         }
     });
 };
+
+// --- Additional Tools ---
+const vTool = new VisibilityTool(scene);
 
 // Initial scene-wide shadow enable
 enableShadows(scene);
@@ -197,6 +223,8 @@ const state = {
     isTurningKey: false,
     isMovingPuzzleBox: false,
     isBoxOnPedestal: false,
+    camClampingDisabled: false,
+    shadowNeedsRefresh: true,
     pBoxTargetPos: new THREE.Vector3(0, 0, 0),
 };
 
@@ -291,10 +319,13 @@ const ctx = {
         state.targetFocus.set(0, 0, 0);
         state.cameraFocus.set(3, 2, 4);
         state.isZoomedOnFoot = false;
+        state.camClampingDisabled = false;
+        controls.enablePan = false;
         controls.minAzimuthAngle = -Infinity;
         controls.maxAzimuthAngle = Infinity;
         controls.minPolarAngle = 0;
         controls.maxPolarAngle = Math.PI * 0.6;
+        controls.maxDistance = 20;
     },
     pickupItem: async (itemGroup) => {
         const item = itemGroup.userData.itemInstance;
@@ -341,6 +372,20 @@ const ctx = {
         // Reset zoom
         ctx.resetZoom();
         ctx.statusElement.innerText = `STATUS: PICKED UP ${name.toUpperCase()}`;
+    },
+    detachCamera: () => {
+        state.isTransitioning = false;
+        state.camClampingDisabled = true;
+        controls.enablePan = true;
+        controls.screenSpacePanning = true;
+        controls.minAzimuthAngle = -Infinity;
+        controls.maxAzimuthAngle = Infinity;
+        controls.minPolarAngle = 0;
+        controls.maxPolarAngle = Math.PI;
+        // Also increase max distance for freedom
+        controls.maxDistance = 100;
+        
+        ctx.statusElement.innerText = "STATUS: CAMERA DETACHED - FREE FLY MODE";
     }
 };
 
@@ -455,11 +500,28 @@ controls.addEventListener('start', () => handleControlsStart(ctx));
 // --- Main Loop ---
 function animate() {
     requestAnimationFrame(animate);
+    stats.update();
 
     if (state.isInspecting) {
         inspectionControls.update();
         renderer.render(inspectionScene, inspectionCamera);
     } else {
+        // --- Single Shadow Pass Optimization ---
+        if (state.shadowNeedsRefresh) {
+            // Trigger a single update for all point lights
+            deskLight.shadow.needsUpdate = true;
+            lampLight.shadow.needsUpdate = true;
+            leftLight.shadow.needsUpdate = true;
+            
+            // Check if models are likely fully loaded before stopping the refresh
+            // We'll keep refreshing for the first few seconds of state
+            const time = performance.now();
+            if (time > 5000) { 
+                state.shadowNeedsRefresh = false;
+                console.log("SHADOW MAPS BAKED AND FROZEN");
+            }
+        }
+
         if (state.isTransitioning) {
             controls.target.lerp(state.targetFocus, 0.1);
             camera.position.lerp(state.cameraFocus, 0.1);
@@ -470,43 +532,20 @@ function animate() {
             }
         }
 
-        // Smooth Oil Lamp Flicker
-        if (lampLight) {
-            const time = Date.now() * 0.002;
-            lampLight.intensity = 25 + Math.sin(time * 5) * 5 + Math.random() * 2;
-        }
-
-        // Camera Proximity Hiding (to "X-ray" through obstructions)
-        const camPos = camera.position;
-        const hideThreshold = 0.3;
-        scene.traverse(node => {
-            if (node.isMesh && node.userData) {
-                // Don't hide the cabinet box or things inside it if we are looking at them
-                if (node.userData.isCabinetBody || node.userData.drawerIndex !== undefined) return;
-                
-                const worldPos = new THREE.Vector3();
-                node.getWorldPosition(worldPos);
-                const dist = worldPos.distanceTo(camPos);
-                
-                if (dist < hideThreshold) {
-                    node.visible = false;
-                } else {
-                    node.visible = true;
-                }
-            }
-        });
-
         cabinet.update(state.isEthereal, state.isHintMode, statusElement, ctx);
+        room.update(state.isEthereal);
         chanRight.update();
         chanLeft.update();
         chanBack.update();
         controls.update();
 
-        // --- Clamp Camera Position to stay inside room bounds ---
-        const limitX = 4.8, limitZ = 4.8, limitYTop = 3.5, limitYBottom = -1.5;
-        camera.position.x = THREE.MathUtils.clamp(camera.position.x, -limitX, limitX);
-        camera.position.z = THREE.MathUtils.clamp(camera.position.z, -limitZ, limitZ);
-        camera.position.y = THREE.MathUtils.clamp(camera.position.y, limitYBottom, limitYTop);
+        // --- Clamp Camera Position to stay inside room bounds (if not detached) ---
+        if (!state.camClampingDisabled) {
+            const limitX = 4.8, limitZ = 4.8, limitYTop = 3.5, limitYBottom = -1.5;
+            camera.position.x = THREE.MathUtils.clamp(camera.position.x, -limitX, limitX);
+            camera.position.z = THREE.MathUtils.clamp(camera.position.z, -limitZ, limitZ);
+            camera.position.y = THREE.MathUtils.clamp(camera.position.y, limitYBottom, limitYTop);
+        }
 
         if (state.isMovingPuzzleBox && pBox) {
             const worldPos = new THREE.Vector3();

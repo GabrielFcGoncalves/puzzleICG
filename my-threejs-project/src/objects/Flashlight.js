@@ -4,6 +4,7 @@ import { Item } from './Item.js';
 export class Flashlight extends Item {
     constructor() {
         super('Old Flashlight');
+        this.group.userData.isSmallProp = true;
         this.init();
     }
 
@@ -64,10 +65,12 @@ export class Flashlight extends Item {
         this.group.add(swHitBox);
 
         // --- Spot Light Beam (initially off) ---
-        this.beam = new THREE.SpotLight(0xffffee, 0, 15, Math.PI / 8, 0.3, 1);
+        this.beam = new THREE.SpotLight(0xffffee, 0, 5, Math.PI / 8, 0.3, 1);
         this.beam.castShadow = true; // Enable shadows for the beam
-        this.beam.shadow.mapSize.width = 1024;
-        this.beam.shadow.mapSize.height = 1024;
+        this.beam.shadow.mapSize.width = 512; 
+        this.beam.shadow.mapSize.height = 512;
+        this.beam.shadow.bias = -0.0001; // Fix Shadow Acne
+        this.beam.shadow.normalBias = 0.02; // Fix Shadow Acne
         this.beam.position.set(0.24, 0, 0); // At the lens
         const beamTarget = new THREE.Object3D();
         beamTarget.position.set(2, 0, 0); 
@@ -82,7 +85,7 @@ export class Flashlight extends Item {
         this.isOn = !this.isOn;
         if (this.isOn) {
             this.switchMesh.position.y = 0.042; // Clicks in
-            this.beam.intensity = 2000;
+            this.beam.intensity = 1000;
         } else {
             this.switchMesh.position.y = 0.05;
             this.beam.intensity = 0;

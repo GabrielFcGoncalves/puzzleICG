@@ -1,0 +1,11 @@
+Model Information:
+* title:	Stone Table - Classical Style
+* source:	https://sketchfab.com/3d-models/stone-table-classical-style-6141975473f34118bc71f91352e55a3d
+* author:	Samuel Francis Johnson (Oneironauticus) (https://sketchfab.com/oneironauticus)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Stone Table - Classical Style" (https://sketchfab.com/3d-models/stone-table-classical-style-6141975473f34118bc71f91352e55a3d) by Samuel Francis Johnson (Oneironauticus) (https://sketchfab.com/oneironauticus) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

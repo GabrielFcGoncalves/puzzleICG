@@ -30,7 +30,7 @@ export class PuzzleBox {
         this.group.add(pyramid);
 
         // Mark as puzzle part
-        this.group.userData = { isPuzzleBox: true, isStaticPuzzlePart: true };
+        this.group.userData = { isPuzzleBox: true, isStaticPuzzlePart: true, isSmallProp: true };
 
         // --- Darker Wood Stripes (Edges) ---
         const stripeMat = new THREE.MeshStandardMaterial({ 

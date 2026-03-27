@@ -108,13 +108,25 @@ export function handleDoubleClick(event, ctx) {
     }
 
     // 3. Check for Static Puzzle Parts (Zoom)
+    // 3. Check for Static Puzzle Parts (Zoom)
     if (target.userData.isStaticPuzzlePart) {
         state.isZoomedOnFoot = false;
         const worldPos = new THREE.Vector3();
         target.getWorldPosition(worldPos);
 
+        if (target.userData.isPainting) {
+            const rotY = target.rotation.y;
+            let camOffset;
+            if (Math.abs(rotY - Math.PI / 2) < 0.1 || Math.abs(rotY + Math.PI / 2) < 0.1) {
+                camOffset = new THREE.Vector3(1, 0, 0); 
+            } else {
+                camOffset = new THREE.Vector3(0, 0, 1);
+            }
+            zoomTo(worldPos, 1.5, null, camOffset);
+            return;
+        }
+
         if (target.userData.isStand) {
-            // Handle-style close-up, but with free rotation
             zoomTo(worldPos, 1.5, null, new THREE.Vector3(0, 0.4, 0.8));
             controls.minAzimuthAngle = -Infinity;
             controls.maxAzimuthAngle = Infinity;
@@ -122,7 +134,6 @@ export function handleDoubleClick(event, ctx) {
         }
 
         if (target.userData.isMountedFlashlight) {
-            // Very close zoom on the mounted flashlight
             zoomTo(worldPos, 0.8, null, new THREE.Vector3(0, 0.3, 0.5));
             controls.minAzimuthAngle = -Infinity;
             controls.maxAzimuthAngle = Infinity;
