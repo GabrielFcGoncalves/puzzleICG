@@ -10,7 +10,7 @@ export class WallChandelier {
 
     init() {
         const loader = new GLTFLoader();
-        const lampPath = new URL('../models/wall_lamp/scene.gltf', import.meta.url).href;
+        const lampPath = new URL('../../models/wall_lamp/scene.gltf', import.meta.url).href;
         
         loader.load(lampPath, (gltf) => {
             const lampModel = gltf.scene;

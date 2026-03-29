@@ -71,7 +71,7 @@ export class Flashlight extends Item {
         this.beam.shadow.mapSize.height = 512;
         this.beam.shadow.bias = -0.0001; // Fix Shadow Acne
         this.beam.shadow.normalBias = 0.02; // Fix Shadow Acne
-        this.beam.position.set(0.24, 0, 0); // At the lens
+        this.beam.position.set(0, 1, -0.25); // At the lens
         const beamTarget = new THREE.Object3D();
         beamTarget.position.set(2, 0, 0); 
         this.group.add(beamTarget);
@@ -85,7 +85,7 @@ export class Flashlight extends Item {
         this.isOn = !this.isOn;
         if (this.isOn) {
             this.switchMesh.position.y = 0.042; // Clicks in
-            this.beam.intensity = 1000;
+            this.beam.intensity = 200;
         } else {
             this.switchMesh.position.y = 0.05;
             this.beam.intensity = 0;

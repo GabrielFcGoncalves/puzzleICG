@@ -6,6 +6,7 @@ export function handleDoubleClick(event, ctx) {
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     raycaster.setFromCamera(mouse, camera);
+    state.showBirdInFocus = false; // Reset by default
 
     // Raycast against everything in the scene to handle occlusion correctly
     const allHits = raycaster.intersectObjects(scene.children, true);
@@ -122,7 +123,13 @@ export function handleDoubleClick(event, ctx) {
             } else {
                 camOffset = new THREE.Vector3(0, 0, 1);
             }
-            zoomTo(worldPos, 1.5, null, camOffset);
+            const hasBird = state.inventory.some(i => i.name.toLowerCase().includes('bird'));
+            if (hasBird) {
+                state.showBirdInFocus = true;
+                console.log("ALIGNMENT TRIGGERED: Iron Bird found in inventory.");
+            }
+            
+            zoomTo(worldPos, 2.4, null, camOffset);
             return;
         }
 

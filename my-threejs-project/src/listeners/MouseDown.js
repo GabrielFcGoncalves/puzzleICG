@@ -94,4 +94,17 @@ export function handleMouseDown(event, ctx) {
             offset.copy(intersectionPoint).sub(dGroup.position);
         }
     }
+
+    if (state.showBirdInFocus && ctx.birdProxy) {
+        const birdHits = raycaster.intersectObject(ctx.birdProxy, true);
+        if (birdHits.length > 0) {
+            state.isDraggingBird = true;
+            state.initialMouseX = event.clientX;
+            state.initialMouseY = event.clientY;
+            state.initialRotationY = ctx.birdProxy.rotation.y;
+            state.initialRotationX = ctx.birdProxy.rotation.x;
+            controls.enabled = false;
+            return;
+        }
+    }
 }

@@ -3,6 +3,7 @@ export function handleMouseUp(event, ctx) {
     state.isDragging = false;
     state.isRotatingFooting = false;
     state.isTurningKey = false;
+    state.isDraggingBird = false;
     state.draggedDrawerIndex = -1;
     state.rotatedFooting = null;
     controls.enabled = true;

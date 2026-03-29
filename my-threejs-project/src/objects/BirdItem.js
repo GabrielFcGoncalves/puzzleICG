@@ -19,10 +19,12 @@ export class BirdItem extends Item {
             // Adjust scale if needed
             bird.scale.set(0.5, 0.5, 0.5);
             
-            // --- Center the Pivot ---
+            // --- Grounding fix: center X/Z, but put Y at the VERY BOTTOM ---
             const box = new THREE.Box3().setFromObject(bird);
             const center = box.getCenter(new THREE.Vector3());
-            bird.position.sub(center); // Subtracting the offset to center the geometry
+            bird.position.x -= center.x;
+            bird.position.z -= center.z;
+            bird.position.y -= box.min.y; // Bird's "feet" now at group y=0
             
             bird.traverse(node => {
                 if (node.isMesh) {

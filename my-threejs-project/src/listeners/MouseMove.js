@@ -26,10 +26,16 @@ export function handleMouseMove(event, ctx) {
             const zMax = dGroup.userData.openedZ;
             cabinet.targetDrawerZ[state.draggedDrawerIndex] = Math.max(zMin, Math.min(zMax, intersectionPoint.z - offset.z));
         }
+    } else if (state.isDraggingBird && ctx.birdProxy) {
+        const deltaX = event.clientX - state.initialMouseX;
+        const deltaY = event.clientY - state.initialMouseY;
+        ctx.birdProxy.rotation.y = state.initialRotationY + deltaX * 0.01;
+        ctx.birdProxy.rotation.x = state.initialRotationX + deltaY * 0.01;
     } else {
         const wheelHover = raycaster.intersectObjects(cabinet.wheels, true);
         const handleHover = raycaster.intersectObjects(ctx.getHandles(), true);
         const itemHover = raycaster.intersectObjects(ctx.getItems() || [], true);
+        const birdHover = (state.showBirdInFocus && ctx.birdProxy) ? raycaster.intersectObject(ctx.birdProxy, true) : [];
         const footHover = raycaster.intersectObjects(cabinet.feet || [], true);
 
         let canInteractWithFoot = false;
@@ -49,7 +55,7 @@ export function handleMouseMove(event, ctx) {
                 canInteractWithHandle = true;
             }
         }
-        let canInteract = wheelHover.length > 0 || canInteractWithFoot || itemHover.length > 0;
+        let canInteract = wheelHover.length > 0 || canInteractWithFoot || itemHover.length > 0 || birdHover.length > 0;
 
         renderer.domElement.style.cursor = (canInteract || canInteractWithHandle) ? 'pointer' : 'grab';
     }
