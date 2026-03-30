@@ -72,17 +72,74 @@ export class AnimationSystem {
             this.world.uiManager.statusElement,
             this.world
         );
-        this.mainScene.objects.room.update(this.store.state.isEthereal);
+        this.mainScene.objects.room.update(
+            this.store.state.isEthereal,
+            this.store.state.isBirdPuzzleSolved
+        );
     }
 
     updateBirdProxy() {
         const birdProxy = this.mainScene.birdProxy;
         if (this.store.state.showBirdInFocus && birdProxy && birdProxy.children.length > 0) {
             birdProxy.visible = true;
-            birdProxy.position.set(-4, 3, 0);
+            birdProxy.position.set(-4, 1.5, 0); // user manual change
             birdProxy.scale.set(0.3, 0.3, 0.3);
+
+            // --- Alignment Puzzle Logic ---
+            if (!this.store.state.isBirdPuzzleSolved) {
+                // Normalize rotation angles to [0, 2PI] then check distance to [0, 0]
+                const rotX = ((birdProxy.rotation.x % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
+                const rotY = ((birdProxy.rotation.y % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
+
+                const threshold = 0.15; // Tolerance
+                const isAligned = (Math.abs(rotX) < threshold || Math.abs(rotX - Math.PI * 2) < threshold) &&
+                                  (Math.abs(rotY) < threshold || Math.abs(rotY - Math.PI * 2) < threshold);
+
+                if (isAligned) {
+                    if (!this.puzzleTimer) this.puzzleTimer = performance.now();
+                    const duration = performance.now() - this.puzzleTimer;
+
+                    if (duration > 2000) { // 2 Seconds
+                        this.store.state.isBirdPuzzleSolved = true;
+                        this.world.uiManager.setStatus("ALIGNMENT CORRECT - A MECHANISM ACTIVATED");
+                        console.log("Bird Puzzle Solved!");
+                    }
+                } else {
+                    this.puzzleTimer = null;
+                }
+            }
         } else {
             birdProxy.visible = false;
+        }
+
+        // --- Handle Closet (Shelf) Transition ---
+        if (this.store.state.isBirdPuzzleSolved) {
+            const shelf = this.mainScene.objects.room.shelf;
+            if (shelf) {
+                const targetX = -1.5; // -3.5 + 2.0 (User manual fix)
+                if (Math.abs(shelf.position.x - targetX) > 0.01) {
+                    shelf.position.x = THREE.MathUtils.lerp(shelf.position.x, targetX, 0.02);
+                }
+            }
+        }
+
+        // --- Handle Secret Square Transition ---
+        if (this.store.state.isSecretSquareTriggered) {
+            const square = this.mainScene.objects.room.secretSquare;
+            if (square) {
+                const targetX = (this.mainScene.objects.room.size / 2) - 0.05; 
+                const targetZ = 3.0; // 2.0 (base) + 1.0 (width)
+
+                // Step 1: Push/Pull (-0.05 X offset)
+                if (Math.abs(square.position.x - targetX) > 0.001) {
+                    square.position.x = THREE.MathUtils.lerp(square.position.x, targetX, 0.05);
+                } else {
+                    // Step 2: Slide (move by width in Z)
+                    if (Math.abs(square.position.z - targetZ) > 0.001) {
+                        square.position.z = THREE.MathUtils.lerp(square.position.z, targetZ, 0.05);
+                    }
+                }
+            }
         }
     }
 

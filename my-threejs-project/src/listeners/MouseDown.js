@@ -36,6 +36,15 @@ export function handleMouseDown(event, ctx) {
                     }
                 }
             }
+            if (search.userData.isPadlockButton) {
+                if (state.isZoomedOnPadlock) {
+                    search.userData.isPressed = true;
+                    if (cabinet.checkPuzzle()) {
+                        ctx.statusElement.innerText = "STATUS: UNLOCKED (Grab handle)";
+                    }
+                    return;
+                }
+            }
             search = search.parent;
         }
     }
@@ -52,14 +61,11 @@ export function handleMouseDown(event, ctx) {
     }
 
 
-    if (wheelHits.length > 0) {
+    if (wheelHits.length > 0 && state.isZoomedOnPadlock) {
         const h = wheelHits[0].object;
         const index = h.userData.index !== undefined ? h.userData.index : h.parent.userData.index;
         cabinet.currentCode[index] = (cabinet.currentCode[index] + 1) % 10;
         cabinet.wheels[index].userData.targetRot += (Math.PI * 2) / 10;
-        if (cabinet.checkPuzzle()) {
-            ctx.statusElement.innerText = "STATUS: UNLOCKED (Grab handle)";
-        }
         controls.enabled = false;
         return;
     }

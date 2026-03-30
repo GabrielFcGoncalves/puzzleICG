@@ -107,7 +107,7 @@ export class InputSystem {
         }
 
         if (targetStand && itemData.name === 'Old Flashlight') {
-            const f = new Flashlight();
+            const f = new Flashlight(this.world.loadingManager);
             f.setPosition(-1.1, 0.55, 0); 
             f.group.scale.set(1.2, 1.2, 1.2);
             f.group.rotation.y = Math.PI;

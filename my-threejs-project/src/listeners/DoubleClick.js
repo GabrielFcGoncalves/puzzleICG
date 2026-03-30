@@ -7,6 +7,7 @@ export function handleDoubleClick(event, ctx) {
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     raycaster.setFromCamera(mouse, camera);
     state.showBirdInFocus = false; // Reset by default
+    state.isZoomedOnPadlock = false; // Reset by default
 
     // Raycast against everything in the scene to handle occlusion correctly
     const allHits = raycaster.intersectObjects(scene.children, true);
@@ -32,7 +33,10 @@ export function handleDoubleClick(event, ctx) {
                 search.userData.isRotatable || 
                 search.userData.isFooting ||
                 search.userData.isFlashlightSwitch ||
-                search.userData.isCabinetBody) {
+                search.userData.isCabinetBody ||
+                search.userData.isPadlock ||
+                search.userData.isPadlockWheel ||
+                search.userData.isPadlockButton) {
                 interactiveHit = { hit, entity: search };
                 break;
             }
@@ -99,9 +103,13 @@ export function handleDoubleClick(event, ctx) {
         if (target.userData.itemName === 'Old Key' && !state.isZoomedOnFoot) return;
         const worldPos = new THREE.Vector3();
         target.getWorldPosition(worldPos);
-        if (worldPos.distanceTo(controls.target) < 0.5) {
+        
+        // If it's close enough to the target focus, pick it up.
+        // Increased threshold to 1.1 to accommodate items recessed in the secret hole.
+        if (worldPos.distanceTo(controls.target) < 1.1) {
              ctx.pickupItem(target);
-        } else {
+        } else if (target.userData.isZoomable !== false) {
+             // Only zoom to it if zooming is enabled for this item
              state.isZoomedOnFoot = false;
              zoomTo(worldPos, 1.0);
         }
@@ -137,6 +145,19 @@ export function handleDoubleClick(event, ctx) {
             zoomTo(worldPos, 1.5, null, new THREE.Vector3(0, 0.4, 0.8));
             controls.minAzimuthAngle = -Infinity;
             controls.maxAzimuthAngle = Infinity;
+            return;
+        }
+
+        if (target.userData.isSecretSquare) {
+            const worldPos = new THREE.Vector3();
+            target.getWorldPosition(worldPos);
+            const dist = camera.position.distanceTo(worldPos);
+            
+            if (dist < 1.5) { // If already zoomed in
+                state.isSecretSquareTriggered = true; 
+            } else {
+                zoomTo(worldPos, 0.8, null, new THREE.Vector3(-0.6, 0, 0)); 
+            }
             return;
         }
 
@@ -199,7 +220,29 @@ export function handleDoubleClick(event, ctx) {
         return;
     }
 
-    // 7. Cabinet Body or other things
+    // 7. Check for Padlock
+    if (target.userData.isPadlock || target.userData.isPadlockWheel || target.userData.isPadlockButton) {
+        state.isZoomedOnFoot = false;
+        state.isZoomedOnPadlock = true;
+        
+        const worldPos = new THREE.Vector3();
+        target.getWorldPosition(worldPos);
+
+        // Zoom to the padlock
+        if (target.userData.isPadlockWheel || target.userData.isPadlockButton) {
+            zoomTo(worldPos, 2.0, null, new THREE.Vector3(0, 0.4, 0.6));
+        } else {
+            zoomTo(worldPos, 0.5, null, new THREE.Vector3(0, 0, 0.8));
+        }
+
+        controls.minAzimuthAngle = -Math.PI / 6;
+        controls.maxAzimuthAngle = Math.PI / 6;
+        controls.minPolarAngle = Math.PI * 0.4;
+        controls.maxPolarAngle = Math.PI * 0.75;
+        return;
+    }
+
+    // 8. Cabinet Body or other things
     if (target.userData.isCabinetBody) {
         state.isZoomedOnFoot = false;
         const worldPos = new THREE.Vector3();

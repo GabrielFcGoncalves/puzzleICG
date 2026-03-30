@@ -1,15 +1,16 @@
 import * as THREE from 'three';
 import { createWheelTexture, createNoteTexture, createClueTexture } from '../utils/Textures.js';
 import { Key } from './Key.js';
+import { Padlock } from './Padlock.js';
 
 export class Cabinet {
-    constructor(scene) {
+    constructor(scene, loadingManager) {
         this.scene = scene;
+        this.loadingManager = loadingManager || new THREE.LoadingManager();
         this.group = new THREE.Group();
         this.isUnlocked = false; // Corresponds to the bottom drawer lock
-        this.wheels = [];
-        this.currentCode = [0, 0, 0, 0];
-        this.targetCode = [1, 2, 3, 4];
+        this.currentCode = [0, 0, 0, 0, 0];
+        this.targetCode = [4, 8, 2, 7, 5];
         this.isKeyInserted = false;
         this.isKeyTurned = false;
 
@@ -22,6 +23,8 @@ export class Cabinet {
 
         this.init();
     }
+
+    get wheels() { return this.padlock ? this.padlock.wheels : []; }
 
     init() {
         // --- Textures ---
@@ -272,39 +275,17 @@ export class Cabinet {
         this.cluePlane.rotation.y = Math.PI;
         this.group.add(this.cluePlane);
 
-        // ─── Combination wheels (on bottom drawer front face) ─────────
-        const wheelGeom = new THREE.CylinderGeometry(0.12, 0.12, 0.14, 60);
-        wheelGeom.rotateZ(Math.PI / 2);
-        const sideMat = new THREE.MeshStandardMaterial({ map: this.wheelSideTex, roughness: 0.3 });
-        const capMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
-        const bottomDef = drawerDefs[1];
+        // ─── Padlock (on bottom drawer front face) ────────────────────
         const bottomDrawer = this.drawerGroups[1];
-
-        for (let i = 0; i < 4; i++) {
-            const wheel = new THREE.Mesh(wheelGeom, [sideMat, capMat, capMat]);
-            wheel.position.set(-0.3 + i * 0.2, 0, bottomDef.d / 2 + 0.08);
-            wheel.userData = { index: i, targetRot: 0 };
-
-            // Invisible hitBox for wheel
-            const wheelHitBox = new THREE.Mesh(
-                new THREE.SphereGeometry(0.25, 16, 16),
-                new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })
-            );
-            wheelHitBox.userData = { index: i }; // Also carry the index
-            wheel.add(wheelHitBox);
-
-            bottomDrawer.add(wheel);
-            this.wheels.push(wheel);
-        }
+        this.padlock = new Padlock(bottomDrawer, this.loadingManager);
+        this.padlock.group.position.set(0, 0, drawerDefs[1].d / 2 + 0.1);
 
         this.scene.add(this.group);
     }
 
     update(isEthereal, isHintMode, statusElement, ctx) {
         // Smooth wheel rotation
-        this.wheels.forEach(w => {
-            w.rotation.x = THREE.MathUtils.lerp(w.rotation.x, w.userData.targetRot, 0.15);
-        });
+        this.padlock.update(this.isUnlocked);
 
         // Smooth key rotation if turned
         if (this.isKeyInserted && this.keyPivot) {
@@ -346,6 +327,7 @@ export class Cabinet {
         // Gather all zoomable parts
         const zoomables = [
             ...this.wheels,
+            this.padlock.group,
             ...ctx.getHandles(),
             ...ctx.getItems(),
             // Special foot is this.feet[2] if it exists
@@ -373,7 +355,7 @@ export class Cabinet {
             this.isUnlocked = true;
             // Also update the bottom drawer state in its userData
             this.drawerGroups[1].userData.isLocked = false;
-            this.wheels.forEach(w => (w.visible = false));
+            // Padlock visibility is now managed by its own animation loop to allow the shackle to open
             return true;
         }
         return false;

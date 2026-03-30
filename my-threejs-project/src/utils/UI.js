@@ -9,6 +9,7 @@ export class UIManager {
         this.inspectionOverlay = document.getElementById('inspection-overlay');
         this.closeInspectionBtn = document.getElementById('close-inspection');
         this.dragOverlay = document.getElementById('drag-overlay');
+        this.overlayElement = document.getElementById('ethereal-overlay');
         this.slots = document.querySelectorAll('.slot');
 
         this.init();

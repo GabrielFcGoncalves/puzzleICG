@@ -1,56 +1,43 @@
 import * as THREE from 'three';
+import { ModelLoader } from '../utils/ModelLoader.js';
 import { Item } from './Item.js';
 
 export class Flashlight extends Item {
-    constructor() {
+    constructor(loadingManager) {
         super('Old Flashlight');
+        this.loadingManager = loadingManager || new THREE.LoadingManager();
+        this.modelLoader = new ModelLoader(this.loadingManager);
         this.group.userData.isSmallProp = true;
         this.init();
     }
 
-    init() {
-        // --- Materials ---
-        const bodyMat = new THREE.MeshStandardMaterial({ 
-            color: 0x1a1a1a, 
-            metalness: 0.9, 
-            roughness: 0.1 
-        });
-        const lensMat = new THREE.MeshBasicMaterial({ color: 0xffffaa });
+    async init() {
+        // --- Models ---
+        const path = new URL('../models/Flashlight/scene.gltf', import.meta.url).href;
+        
+        try {
+            const gltf = await this.modelLoader.load(path, { shadows: true, logNames: true });
+            const model = gltf.scene;
+            
+            // Adjust model (The model might need scaling and centering)
+            model.scale.set(0.0019, 0.0019, 0.0019);
+            model.rotation.y = -Math.PI / 2; // Front face adjustment
+            model.position.set(0, -0.11, 0);
+
+            this.group.add(model);
+        } catch (error) {
+            console.error('Failed to load Flashlight model:', error);
+        }
+
+        // --- Materials (for the switch/hitbox) ---
         const rimMat = new THREE.MeshStandardMaterial({ color: 0xaa8800, metalness: 0.8 });
 
-        // --- Main Body Cylinder ---
-        const body = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.045, 0.04, 0.35, 32),
-            bodyMat
-        );
-        body.rotation.z = Math.PI / 2; // Lie flat
-        this.group.add(body);
-
-        // --- Head/Lens Area ---
-        const head = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.08, 0.045, 0.08, 32),
-            bodyMat
-        );
-        head.rotation.z = Math.PI / 2;
-        head.position.x = 0.2; // Move to the end
-        this.group.add(head);
-
-        // --- Lens (Glowing part) ---
-        const lens = new THREE.Mesh(
-            new THREE.CircleGeometry(0.07, 32),
-            lensMat
-        );
-        lens.rotation.y = Math.PI / 2;
-        lens.position.x = 0.241;
-        this.group.add(lens);
-
-        // --- Switch ---
+        // --- Switch (Simplified) ---
         const sw = new THREE.Mesh(
             new THREE.BoxGeometry(0.04, 0.015, 0.02),
             rimMat
         );
-        sw.position.y = 0.05;
-        // Label for interaction
+        sw.position.set(0, 0.04, 0.05); // Approximate position
         sw.userData = { isFlashlightSwitch: true };
         this.group.add(sw);
         this.switchMesh = sw;
@@ -60,20 +47,24 @@ export class Flashlight extends Item {
             new THREE.SphereGeometry(0.1, 8, 8),
             new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })
         );
-        swHitBox.position.y = 0.05;
+        swHitBox.position.set(0, 0.04, 0.05);
         swHitBox.userData = { isFlashlightSwitch: true };
         this.group.add(swHitBox);
 
         // --- Spot Light Beam (initially off) ---
-        this.beam = new THREE.SpotLight(0xffffee, 0, 5, Math.PI / 8, 0.3, 1);
-        this.beam.castShadow = true; // Enable shadows for the beam
-        this.beam.shadow.mapSize.width = 512; 
-        this.beam.shadow.mapSize.height = 512;
-        this.beam.shadow.bias = -0.0001; // Fix Shadow Acne
-        this.beam.shadow.normalBias = 0.02; // Fix Shadow Acne
-        this.beam.position.set(0, 1, -0.25); // At the lens
+        // Adjust beam position and direction for the new model
+        this.beam = new THREE.SpotLight(0xffffee, 0, 8, Math.PI / 10, 0.3, 1);
+        this.beam.castShadow = true;
+        this.beam.shadow.mapSize.width = 1024; 
+        this.beam.shadow.mapSize.height = 1024;
+        this.beam.shadow.bias = -0.0001; 
+        this.beam.shadow.normalBias = 0.02; 
+        
+        // Lens is roughly at (0, 0, 0.2) if model scale is 0.2 and it's long along Z
+        this.beam.position.set(0, 0, 0.2); 
+        
         const beamTarget = new THREE.Object3D();
-        beamTarget.position.set(2, 0, 0); 
+        beamTarget.position.set(0, 0, 1); 
         this.group.add(beamTarget);
         this.beam.target = beamTarget;
         this.group.add(this.beam);
@@ -84,10 +75,10 @@ export class Flashlight extends Item {
     toggle() {
         this.isOn = !this.isOn;
         if (this.isOn) {
-            this.switchMesh.position.y = 0.042; // Clicks in
+            if (this.switchMesh) this.switchMesh.position.y = 0.032; // Clicks in
             this.beam.intensity = 200;
         } else {
-            this.switchMesh.position.y = 0.05;
+            if (this.switchMesh) this.switchMesh.position.y = 0.04;
             this.beam.intensity = 0;
         }
     }

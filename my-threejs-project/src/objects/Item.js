@@ -12,6 +12,7 @@ export class Item {
             itemName: name,
             itemInstance: this
         };
+        this.preserveRotationInThumbnail = false;
     }
 
     setPosition(x, y, z) {
@@ -51,7 +52,9 @@ export class Item {
 
         const clone = this.cloneGroup();
         clone.position.set(0, 0, 0);
-        clone.rotation.set(0, 0, 0);
+        if (!this.preserveRotationInThumbnail) {
+            clone.rotation.set(0, 0, 0);
+        }
 
         // Center the object
         const box = new THREE.Box3().setFromObject(clone);

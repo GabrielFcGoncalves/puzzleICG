@@ -28,6 +28,9 @@ export class GameStore {
             showBirdInFocus: false,
             fHelper: null,
             isDraggingBird: false,
+            isBirdPuzzleSolved: false,
+            isSecretSquareTriggered: false,
+            isZoomedOnPadlock: false,
         };
         
         // References to objects that will be set during initialization
@@ -83,6 +86,7 @@ export class GameStore {
         this.state.targetFocus.set(0, 0, 0);
         this.state.cameraFocus.set(3, 2, 4);
         this.state.isZoomedOnFoot = false;
+        this.state.isZoomedOnPadlock = false;
         this.state.camClampingDisabled = false;
         this.state.showBirdInFocus = false;
 

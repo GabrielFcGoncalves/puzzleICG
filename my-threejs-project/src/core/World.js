@@ -30,8 +30,25 @@ export class World {
 
         this.uiManager = new UIManager(this);
         
+        // --- Loading Management ---
+        const loaderBar = document.getElementById('loader-bar');
+        const loaderText = document.getElementById('loader-text');
+        const loaderScreen = document.getElementById('loading-screen');
+        
+        this.loadingManager = new THREE.LoadingManager();
+        this.loadingManager.onProgress = (url, itemsLoaded, itemsTotal) => {
+            const p = (itemsLoaded / itemsTotal) * 100;
+            if (loaderBar) loaderBar.style.width = `${p}%`;
+            if (loaderText) loaderText.innerText = `${Math.round(p)}% - LOADING ${url.split('/').pop()}`;
+        };
+        this.loadingManager.onLoad = () => {
+            setTimeout(() => {
+                if (loaderScreen) loaderScreen.classList.add('loading-finished');
+            }, 500);
+        };
+
         // Initialize Scene and Animation System
-        this.mainScene = new MainScene(this.camera);
+        this.mainScene = new MainScene(this.camera, this.loadingManager);
         this.inspectionScene = new InspectionScene(this.renderer);
         this.animationSystem = new AnimationSystem(this);
 
@@ -90,6 +107,7 @@ export class World {
     get puzzleBox() { return this.mainScene.objects.pBox; }
     get state() { return this.store.state; }
     get statusElement() { return this.uiManager.statusElement; }
+    get overlayElement() { return this.uiManager.overlayElement; }
 
     getHandles() {
         const handles = [];
