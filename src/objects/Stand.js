@@ -22,12 +22,12 @@ export class Stand {
         );
         this.group.add(base);
 
-        // --- Supporting Arm ---
+        // --- Supporting Arm (Taller) ---
         const arm = new THREE.Mesh(
-            new THREE.BoxGeometry(0.04, 0.25, 0.04),
+            new THREE.BoxGeometry(0.04, 0.7, 0.04),
             material
         );
-        arm.position.y = 0.125;
+        arm.position.y = 0.35;
         this.group.add(arm);
 
         // --- Wide U-shaped Holder ---
@@ -36,7 +36,7 @@ export class Stand {
             material
         );
         holder.rotation.x = -Math.PI;
-        holder.position.y = 0.375;
+        holder.position.y = 0.775; // Adjusted for taller arm
         holder.rotation.y = Math.PI / 2;
         this.group.add(holder);
 
@@ -46,7 +46,7 @@ export class Stand {
             new THREE.SphereGeometry(0.3, 16, 16),
             new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })
         );
-        hitBox.position.y = 0.25;
+        hitBox.position.y = 0.65;
         hitBox.userData = { isStand: true }; // Helps the raycaster logic identify it
         this.group.add(hitBox);
 

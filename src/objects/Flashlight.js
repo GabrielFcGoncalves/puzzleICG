@@ -8,6 +8,7 @@ export class Flashlight extends Item {
         this.loadingManager = loadingManager || new THREE.LoadingManager();
         this.modelLoader = new ModelLoader(this.loadingManager);
         this.group.userData.isSmallProp = true;
+        this.thumbnailRotation = { x: 0, y: Math.PI / 2, z: 0 };
         this.init();
     }
 
@@ -20,9 +21,9 @@ export class Flashlight extends Item {
             const model = gltf.scene;
             
             // Adjust model (The model might need scaling and centering)
-            model.scale.set(0.0019, 0.0019, 0.0019);
-            model.rotation.y = -Math.PI / 2; // Front face adjustment
-            model.position.set(0, -0.11, 0);
+            model.scale.set(0.015, 0.015, 0.015);
+            model.rotation.x = Math.PI / 2;
+            model.position.set(0, 0, 0);
 
             this.group.add(model);
         } catch (error) {

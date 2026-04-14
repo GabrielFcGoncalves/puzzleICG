@@ -13,6 +13,7 @@ export class Item {
             itemInstance: this
         };
         this.preserveRotationInThumbnail = false;
+        this.thumbnailRotation = null; // THREE.Euler or {x, y, z}
     }
 
     setPosition(x, y, z) {
@@ -52,7 +53,9 @@ export class Item {
 
         const clone = this.cloneGroup();
         clone.position.set(0, 0, 0);
-        if (!this.preserveRotationInThumbnail) {
+        if (this.thumbnailRotation) {
+            clone.rotation.set(this.thumbnailRotation.x, this.thumbnailRotation.y, this.thumbnailRotation.z);
+        } else if (!this.preserveRotationInThumbnail) {
             clone.rotation.set(0, 0, 0);
         }
 
