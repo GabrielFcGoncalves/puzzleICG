@@ -1,3 +1,3 @@
 export function handleControlsStart(ctx) {
-    ctx.state.isTransitioning = false;
+    ctx.cameraState.isTransitioning = false;
 }

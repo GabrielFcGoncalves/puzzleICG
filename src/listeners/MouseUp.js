@@ -1,11 +1,6 @@
 export function handleMouseUp(event, ctx) {
-    const { state, controls, renderer } = ctx;
-    state.isDragging = false;
-    state.isRotatingFooting = false;
-    state.isTurningKey = false;
-    state.isDraggingBird = false;
-    state.draggedDrawerIndex = -1;
-    state.rotatedFooting = null;
+    const { interaction, controls, renderer } = ctx;
+    interaction.resetAll();
     controls.enabled = true;
     renderer.domElement.classList.remove('grabbing');
 }

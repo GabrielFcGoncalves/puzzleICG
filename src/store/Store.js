@@ -1,40 +1,19 @@
 import * as THREE from 'three';
+import { InteractionState } from './InteractionState.js';
+import { CameraState } from './CameraState.js';
+import { PuzzleState } from './PuzzleState.js';
+import { UIState } from './UIState.js';
 
-/**
- * Store class manages the game state and logic related to picking up items, zooming, and transitions.
- */
+
 export class GameStore {
     constructor() {
-        this.state = {
-            isEthereal: false,
-            isDragging: false,
-            isRotatingFooting: false,
-            draggedDrawerIndex: -1,
-            rotatedFooting: null,
-            isTransitioning: false,
-            targetFocus: new THREE.Vector3(0, 0, 0),
-            cameraFocus: new THREE.Vector3(3, 2, 4),
-            inventory: [],
-            draggedInventoryIndex: -1,
-            isHintMode: false,
-            isInspecting: false,
-            isZoomedOnFoot: false,
-            isTurningKey: false,
-            isMovingPuzzleBox: false,
-            isBoxOnPedestal: false,
-            camClampingDisabled: false,
-            shadowNeedsRefresh: true,
-            pBoxTargetPos: new THREE.Vector3(0, 0, 0),
-            showBirdInFocus: false,
-            fHelper: null,
-            isDraggingBird: false,
-            isBirdPuzzleSolved: false,
-            isSecretSquareTriggered: false,
-            isZoomedOnPadlock: false,
-        };
-        
+        this.interaction = new InteractionState();
+        this.camera = new CameraState();
+        this.puzzle = new PuzzleState();
+        this.ui = new UIState();
+
         // References to objects that will be set during initialization
-        this.camera = null;
+        this.cameraRef = null;
         this.scene = null;
         this.renderer = null;
         this.controls = null;
@@ -43,7 +22,7 @@ export class GameStore {
     }
 
     init(camera, scene, renderer, controls, cabinet, uiManager) {
-        this.camera = camera;
+        this.cameraRef = camera;
         this.scene = scene;
         this.renderer = renderer;
         this.controls = controls;
@@ -56,7 +35,7 @@ export class GameStore {
         const name = item.name || 'Unknown Item';
         const thumbnail = await item.getThumbnail();
 
-        this.state.inventory.push({ name, thumbnail, instance: item });
+        this.ui.inventory.push({ name, thumbnail, instance: item });
 
         // Remove from the scene
         if (itemGroup.parent) {
@@ -65,7 +44,7 @@ export class GameStore {
 
         // Update UI
         if (this.uiManager) {
-            this.uiManager.updateInventory(this.state.inventory);
+            this.uiManager.updateInventory(this.ui.inventory);
             this.uiManager.setStatus(`Picked up: ${name.toUpperCase()}`);
         }
 
@@ -73,22 +52,22 @@ export class GameStore {
     }
 
     zoomTo(targetPos, zoomLevel = 1.5, lookAtPos = null, camOffset = new THREE.Vector3(0, 0.8, 1)) {
-        this.state.isTransitioning = true;
-        this.state.targetFocus.copy(lookAtPos || targetPos);
-        
+        this.camera.isTransitioning = true;
+        this.camera.targetFocus.copy(lookAtPos || targetPos);
+
         const transformedOffset = camOffset.clone().applyQuaternion(this.cabinet.group.quaternion);
         const dir = transformedOffset.normalize();
-        this.state.cameraFocus.copy(targetPos).add(dir.multiplyScalar(zoomLevel));
+        this.camera.cameraFocus.copy(targetPos).add(dir.multiplyScalar(zoomLevel));
     }
 
     resetZoom() {
-        this.state.isTransitioning = true;
-        this.state.targetFocus.set(0, 0, 0);
-        this.state.cameraFocus.set(3, 2, 4);
-        this.state.isZoomedOnFoot = false;
-        this.state.isZoomedOnPadlock = false;
-        this.state.camClampingDisabled = false;
-        this.state.showBirdInFocus = false;
+        this.camera.isTransitioning = true;
+        this.camera.targetFocus.set(0, 0, 0);
+        this.camera.cameraFocus.set(3, 2, 4);
+        this.camera.isZoomedOnFoot = false;
+        this.camera.isZoomedOnPadlock = false;
+        this.camera.camClampingDisabled = false;
+        this.puzzle.showBirdInFocus = false;
 
         if (this.controls) {
             this.controls.enablePan = false;
@@ -101,19 +80,18 @@ export class GameStore {
     }
 
     openInspection(itemData) {
-        // ... handled by InspectionScene logic, but it'll need state update
-        this.state.isInspecting = true;
+        this.ui.isInspecting = true;
         if (this.uiManager) this.uiManager.showInspection();
     }
 
     closeInspection() {
-        this.state.isInspecting = false;
+        this.ui.isInspecting = false;
         if (this.uiManager) this.uiManager.hideInspection();
     }
 
     detachCamera() {
-        this.state.isTransitioning = false;
-        this.state.camClampingDisabled = true;
+        this.camera.isTransitioning = false;
+        this.camera.camClampingDisabled = true;
         if (this.controls) {
             this.controls.enablePan = true;
             this.controls.screenSpacePanning = true;
@@ -123,7 +101,7 @@ export class GameStore {
             this.controls.maxPolarAngle = Math.PI;
             this.controls.maxDistance = 100;
         }
-        
+
         if (this.uiManager) this.uiManager.setStatus("Camera Detached - Free Fly Mode");
     }
 }

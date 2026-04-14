@@ -1,41 +1,41 @@
 import * as THREE from 'three';
 
 export function handleMouseMove(event, ctx) {
-    const { mouse, raycaster, camera, cabinet, state, renderer, intersectionPoint, offset } = ctx;
+    const { mouse, raycaster, camera, cabinet, interaction, puzzle, renderer, intersectionPoint, offset } = ctx;
 
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     raycaster.setFromCamera(mouse, camera);
 
-    if (state.isRotatingFooting && state.rotatedFooting) {
-        const deltaX = event.clientX - state.initialMouseX;
-        state.rotatedFooting.rotation.y = state.initialRotationY + deltaX * 0.01;
-    } else if (state.isTurningKey) {
-        const deltaX = event.clientX - state.initialMouseX;
+    if (interaction.isRotatingFooting && interaction.rotatedFooting) {
+        const deltaX = event.clientX - interaction.initialMouseX;
+        interaction.rotatedFooting.rotation.y = interaction.initialRotationY + deltaX * 0.01;
+    } else if (interaction.isTurningKey) {
+        const deltaX = event.clientX - interaction.initialMouseX;
         if (deltaX > 50) {
             cabinet.isKeyTurned = true;
             cabinet.drawerGroups[0].userData.isLocked = false;
             cabinet.targetDrawerZ[0] = cabinet.drawerGroups[0].userData.restZ + 0.05;
             ctx.statusElement.innerText = "STATUS: MIDDLE DRAWER UNLOCKED";
         }
-    } else if (state.isDragging && state.draggedDrawerIndex !== -1) {
-        const dGroup = cabinet.drawerGroups[state.draggedDrawerIndex];
+    } else if (interaction.isDragging && interaction.draggedDrawerIndex !== -1) {
+        const dGroup = cabinet.drawerGroups[interaction.draggedDrawerIndex];
         const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), dGroup.position.y);
         if (raycaster.ray.intersectPlane(groundPlane, intersectionPoint)) {
             const zMin = dGroup.userData.restZ;
             const zMax = dGroup.userData.openedZ;
-            cabinet.targetDrawerZ[state.draggedDrawerIndex] = Math.max(zMin, Math.min(zMax, intersectionPoint.z - offset.z));
+            cabinet.targetDrawerZ[interaction.draggedDrawerIndex] = Math.max(zMin, Math.min(zMax, intersectionPoint.z - offset.z));
         }
-    } else if (state.isDraggingBird && ctx.birdProxy) {
-        const deltaX = event.clientX - state.initialMouseX;
-        const deltaY = event.clientY - state.initialMouseY;
-        ctx.birdProxy.rotation.y = state.initialRotationY + deltaX * 0.01;
-        ctx.birdProxy.rotation.x = state.initialRotationX + deltaY * 0.01;
+    } else if (interaction.isDraggingBird && ctx.birdProxy) {
+        const deltaX = event.clientX - interaction.initialMouseX;
+        const deltaY = event.clientY - interaction.initialMouseY;
+        ctx.birdProxy.rotation.y = interaction.initialRotationY + deltaX * 0.01;
+        ctx.birdProxy.rotation.x = interaction.initialRotationX + deltaY * 0.01;
     } else {
         const wheelHover = raycaster.intersectObjects(cabinet.wheels, true);
         const handleHover = raycaster.intersectObjects(ctx.getHandles(), true);
         const itemHover = raycaster.intersectObjects(ctx.getItems() || [], true);
-        const birdHover = (state.showBirdInFocus && ctx.birdProxy) ? raycaster.intersectObject(ctx.birdProxy, true) : [];
+        const birdHover = (puzzle.showBirdInFocus && ctx.birdProxy) ? raycaster.intersectObject(ctx.birdProxy, true) : [];
         const footHover = raycaster.intersectObjects(cabinet.feet || [], true);
 
         let canInteractWithFoot = false;

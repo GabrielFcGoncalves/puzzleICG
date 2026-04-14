@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 export function handleMouseDown(event, ctx) {
-    const { mouse, raycaster, camera, scene, cabinet, state, controls, renderer, intersectionPoint, offset } = ctx;
+    const { mouse, raycaster, camera, scene, cabinet, interaction, cameraState, puzzle, controls, renderer, intersectionPoint, offset } = ctx;
 
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -9,8 +9,8 @@ export function handleMouseDown(event, ctx) {
 
     // --- Specialized Single-Click Interactions (Flashlight Switch) ---
     const allHits = raycaster.intersectObjects(scene.children, true);
-    for (let i = 0; i < allHits.length; i++) {
-        const hitObj = allHits[i].object;
+    for (const hit of allHits) {
+        const hitObj = hit.object;
         let search = hitObj;
         while (search) {
             if (search.userData.isFlashlightSwitch) {
@@ -37,7 +37,7 @@ export function handleMouseDown(event, ctx) {
                 }
             }
             if (search.userData.isPadlockButton) {
-                if (state.isZoomedOnPadlock) {
+                if (cameraState.isZoomedOnPadlock) {
                     search.userData.isPressed = true;
                     if (cabinet.checkPuzzle()) {
                         ctx.statusElement.innerText = "STATUS: UNLOCKED (Grab handle)";
@@ -54,14 +54,14 @@ export function handleMouseDown(event, ctx) {
     const keyHits = raycaster.intersectObjects([cabinet.keyPivot], true);
 
     if (keyHits.length > 0 && cabinet.isKeyInserted && !cabinet.isKeyTurned) {
-        state.isTurningKey = true;
-        state.initialMouseX = event.clientX;
+        interaction.isTurningKey = true;
+        interaction.initialMouseX = event.clientX;
         controls.enabled = false;
         return;
     }
 
 
-    if (wheelHits.length > 0 && state.isZoomedOnPadlock) {
+    if (wheelHits.length > 0 && cameraState.isZoomedOnPadlock) {
         const h = wheelHits[0].object;
         const index = h.userData.index !== undefined ? h.userData.index : h.parent.userData.index;
         cabinet.currentCode[index] = (cabinet.currentCode[index] + 1) % 10;
@@ -76,10 +76,10 @@ export function handleMouseDown(event, ctx) {
     if (footHits.length > 0) {
         const obj = footHits[0].object;
         if (obj.userData.isRotatable || (obj.parent && obj.parent.userData && obj.parent.userData.isRotatable)) {
-            state.isRotatingFooting = true;
-            state.rotatedFooting = cabinet.rotatableFoot;
-            state.initialMouseX = event.clientX;
-            state.initialRotationY = state.rotatedFooting.rotation.y;
+            interaction.isRotatingFooting = true;
+            interaction.rotatedFooting = cabinet.rotatableFoot;
+            interaction.initialMouseX = event.clientX;
+            interaction.initialRotationY = interaction.rotatedFooting.rotation.y;
             controls.enabled = false;
             return;
         }
@@ -90,8 +90,8 @@ export function handleMouseDown(event, ctx) {
         const dGroup = cabinet.drawerGroups[drawerIndex];
 
         if (!dGroup.userData.isLocked) {
-            state.draggedDrawerIndex = drawerIndex;
-            state.isDragging = true;
+            interaction.draggedDrawerIndex = drawerIndex;
+            interaction.isDragging = true;
             controls.enabled = false;
             renderer.domElement.classList.add('grabbing');
 
@@ -101,14 +101,14 @@ export function handleMouseDown(event, ctx) {
         }
     }
 
-    if (state.showBirdInFocus && ctx.birdProxy) {
+    if (puzzle.showBirdInFocus && ctx.birdProxy) {
         const birdHits = raycaster.intersectObject(ctx.birdProxy, true);
         if (birdHits.length > 0) {
-            state.isDraggingBird = true;
-            state.initialMouseX = event.clientX;
-            state.initialMouseY = event.clientY;
-            state.initialRotationY = ctx.birdProxy.rotation.y;
-            state.initialRotationX = ctx.birdProxy.rotation.x;
+            interaction.isDraggingBird = true;
+            interaction.initialMouseX = event.clientX;
+            interaction.initialMouseY = event.clientY;
+            interaction.initialRotationY = ctx.birdProxy.rotation.y;
+            interaction.initialRotationX = ctx.birdProxy.rotation.x;
             controls.enabled = false;
             return;
         }

@@ -116,8 +116,8 @@ export class MainScene {
         obj.traverse(node => {
             if (node.isMesh) {
                  if (node.material && (node.material.opacity === undefined || node.material.opacity > 0)) {
-                    const isRoomPart = node.userData.isRoomPart || (node.parent && node.parent.userData.isRoomPart);
-                    const isSmallProp = node.userData.isSmallProp || (node.parent && node.parent.userData.isSmallProp);
+                    const isRoomPart = node.userData.isRoomPart || node.parent?.userData.isRoomPart;
+                    const isSmallProp = node.userData.isSmallProp || node.parent?.userData.isSmallProp;
 
                     if (isRoomPart) {
                         node.castShadow = false;

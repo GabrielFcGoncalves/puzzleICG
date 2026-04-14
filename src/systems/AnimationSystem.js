@@ -22,7 +22,7 @@ export class AnimationSystem {
         requestAnimationFrame(this.animate);
         this.stats.update();
 
-        if (this.store.state.isInspecting) {
+        if (this.store.ui.isInspecting) {
             this.inspectionScene.update();
             this.inspectionScene.render(this.renderer);
         } else {
@@ -39,27 +39,27 @@ export class AnimationSystem {
     }
 
     updateShadows() {
-        if (this.store.state.shadowNeedsRefresh) {
+        if (this.store.ui.shadowNeedsRefresh) {
             this.mainScene.lights.desk.shadow.needsUpdate = true;
             this.mainScene.lights.lamp.shadow.needsUpdate = true;
             this.mainScene.lights.left.shadow.needsUpdate = true;
 
             const time = performance.now();
             if (time > 5000) {
-                this.store.state.shadowNeedsRefresh = false;
+                this.store.ui.shadowNeedsRefresh = false;
                 console.log("SHADOW MAPS BAKED AND FROZEN");
             }
         }
     }
 
     updateTransitions() {
-        if (this.store.state.isTransitioning) {
-            this.controls.target.lerp(this.store.state.targetFocus, 0.1);
-            this.camera.position.lerp(this.store.state.cameraFocus, 0.1);
+        if (this.store.camera.isTransitioning) {
+            this.controls.target.lerp(this.store.camera.targetFocus, 0.1);
+            this.camera.position.lerp(this.store.camera.cameraFocus, 0.1);
 
-            if (this.camera.position.distanceTo(this.store.state.cameraFocus) < 0.01 &&
-                this.controls.target.distanceTo(this.store.state.targetFocus) < 0.01) {
-                this.store.state.isTransitioning = false;
+            if (this.camera.position.distanceTo(this.store.camera.cameraFocus) < 0.01 &&
+                this.controls.target.distanceTo(this.store.camera.targetFocus) < 0.01) {
+                this.store.camera.isTransitioning = false;
             }
         }
     }
@@ -67,26 +67,26 @@ export class AnimationSystem {
     updateMainScene() {
         this.mainScene.update();
         this.mainScene.objects.cabinet.update(
-            this.store.state.isEthereal,
-            this.store.state.isHintMode,
+            this.store.ui.isEthereal,
+            this.store.ui.isHintMode,
             this.world.uiManager.statusElement,
             this.world
         );
         this.mainScene.objects.room.update(
-            this.store.state.isEthereal,
-            this.store.state.isBirdPuzzleSolved
+            this.store.ui.isEthereal,
+            this.store.puzzle.isBirdPuzzleSolved
         );
     }
 
     updateBirdProxy() {
         const birdProxy = this.mainScene.birdProxy;
-        if (this.store.state.showBirdInFocus && birdProxy && birdProxy.children.length > 0) {
+        if (this.store.puzzle.showBirdInFocus && birdProxy && birdProxy.children.length > 0) {
             birdProxy.visible = true;
             birdProxy.position.set(-4, 1.5, 0); // user manual change
             birdProxy.scale.set(0.3, 0.3, 0.3);
 
             // --- Alignment Puzzle Logic ---
-            if (!this.store.state.isBirdPuzzleSolved) {
+            if (!this.store.puzzle.isBirdPuzzleSolved) {
                 // Normalize rotation angles to [0, 2PI] then check distance to [0, 0]
                 const rotX = ((birdProxy.rotation.x % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
                 const rotY = ((birdProxy.rotation.y % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
@@ -100,7 +100,7 @@ export class AnimationSystem {
                     const duration = performance.now() - this.puzzleTimer;
 
                     if (duration > 2000) { // 2 Seconds
-                        this.store.state.isBirdPuzzleSolved = true;
+                        this.store.puzzle.isBirdPuzzleSolved = true;
                         this.world.uiManager.setStatus("ALIGNMENT CORRECT - A MECHANISM ACTIVATED");
                         console.log("Bird Puzzle Solved!");
                     }
@@ -113,7 +113,7 @@ export class AnimationSystem {
         }
 
         // --- Handle Closet (Shelf) Transition ---
-        if (this.store.state.isBirdPuzzleSolved) {
+        if (this.store.puzzle.isBirdPuzzleSolved) {
             const shelf = this.mainScene.objects.room.shelf;
             if (shelf) {
                 const targetX = -1.5; // -3.5 + 2.0 (User manual fix)
@@ -124,7 +124,7 @@ export class AnimationSystem {
         }
 
         // --- Handle Secret Square Transition ---
-        if (this.store.state.isSecretSquareTriggered) {
+        if (this.store.puzzle.isSecretSquareTriggered) {
             const square = this.mainScene.objects.room.secretSquare;
             if (square) {
                 const targetX = (this.mainScene.objects.room.size / 2) - 0.05; 
@@ -144,7 +144,7 @@ export class AnimationSystem {
     }
 
     updateClamping() {
-        if (!this.store.state.camClampingDisabled) {
+        if (!this.store.camera.camClampingDisabled) {
             const limitX = 4.8, limitZ = 4.8, limitYTop = 3.5, limitYBottom = -1.5;
             this.camera.position.x = THREE.MathUtils.clamp(this.camera.position.x, -limitX, limitX);
             this.camera.position.z = THREE.MathUtils.clamp(this.camera.position.z, -limitZ, limitZ);
@@ -154,7 +154,7 @@ export class AnimationSystem {
 
     updatePuzzleBoxMovement() {
         const pBox = this.mainScene.objects.pBox;
-        if (this.store.state.isMovingPuzzleBox && pBox) {
+        if (this.store.puzzle.isMovingPuzzleBox && pBox) {
             const worldPos = new THREE.Vector3();
             pBox.group.getWorldPosition(worldPos);
             
@@ -164,14 +164,14 @@ export class AnimationSystem {
             this.camera.position.lerp(targetCamPos, 0.3);
             this.controls.target.lerp(worldPos, 0.3);
             
-            pBox.group.position.lerp(this.store.state.pBoxTargetPos, 0.05);
+            pBox.group.position.lerp(this.store.puzzle.pBoxTargetPos, 0.05);
             
-            if (pBox.group.position.distanceTo(this.store.state.pBoxTargetPos) < 0.1) {
-                this.store.state.isMovingPuzzleBox = false;
-                this.store.state.isBoxOnPedestal = true;
+            if (pBox.group.position.distanceTo(this.store.puzzle.pBoxTargetPos) < 0.1) {
+                this.store.puzzle.isMovingPuzzleBox = false;
+                this.store.puzzle.isBoxOnPedestal = true;
                 this.world.uiManager.setStatus("BOX PLACED ON PEDESTAL - READY FOR INSPECTION");
                 
-                this.store.zoomTo(this.store.state.pBoxTargetPos, 2.5, null, new THREE.Vector3(0, 1.5, 0.8));
+                this.store.zoomTo(this.store.puzzle.pBoxTargetPos, 2.5, null, new THREE.Vector3(0, 1.5, 0.8));
                 
                 this.controls.minAzimuthAngle = -Infinity;
                 this.controls.maxAzimuthAngle = Infinity;

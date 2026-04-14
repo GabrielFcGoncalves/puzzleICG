@@ -15,12 +15,18 @@ export class ModelLoader {
      * @param {Object} options - Configuration for setup (e.g., { shadows: true, roughness: 0.5 }).
      * @returns {Promise<Object>} - Resolves with the GLTF object.
      */
-    async load(path, options = { shadows: true, logNames: false }) {
+    async load(path, options = {}) {
+        const settings = {
+            shadows: true,
+            logNames: false,
+            ...options
+        };
+
         return new Promise((resolve, reject) => {
             this.loader.load(
                 path,
                 (gltf) => {
-                    this.setupModel(gltf.scene, options);
+                    this.setupModel(gltf.scene, settings);
                     resolve(gltf);
                 },
                 undefined,
@@ -37,7 +43,7 @@ export class ModelLoader {
      * @param {THREE.Group|THREE.Scene} model - The model's scene.
      * @param {Object} options - Setup configuration.
      */
-    setupModel(model, options) {
+    setupModel(model, options = {}) {
         if (!model) return;
 
         model.traverse(node => {

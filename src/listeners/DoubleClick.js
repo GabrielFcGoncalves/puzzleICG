@@ -1,13 +1,13 @@
 import * as THREE from 'three';
 
 export function handleDoubleClick(event, ctx) {
-    const { mouse, raycaster, camera, cabinet, zoomTo, resetZoom, controls, state, scene } = ctx;
+    const { mouse, raycaster, camera, cabinet, zoomTo, resetZoom, controls, cameraState, puzzle, uiState, scene } = ctx;
 
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     raycaster.setFromCamera(mouse, camera);
-    state.showBirdInFocus = false; // Reset by default
-    state.isZoomedOnPadlock = false; // Reset by default
+    puzzle.showBirdInFocus = false; // Reset by default
+    cameraState.isZoomedOnPadlock = false; // Reset by default
 
     // Raycast against everything in the scene to handle occlusion correctly
     const allHits = raycaster.intersectObjects(scene.children, true);
@@ -19,8 +19,7 @@ export function handleDoubleClick(event, ctx) {
     // --- Search for first "interaction candidate" while respecting occlusion ---
     // Specifically, if we hit an Item that is NOT blocked by an OPAQUE mesh, we want it.
     let interactiveHit = null;
-    for (let i = 0; i < allHits.length; i++) {
-        const hit = allHits[i];
+    for (const hit of allHits) {
         let obj = hit.object;
         
         // Find if this is part of something interactive
@@ -80,19 +79,19 @@ export function handleDoubleClick(event, ctx) {
         {
             match: t => t.userData.isPuzzleBox,
             handle: (t, pos) => {
-                if (state.isBoxOnPedestal) {
+                if (puzzle.isBoxOnPedestal) {
                     zoomTo(pos, 2, null, new THREE.Vector3(0, 1.5, 0.8));
                     controls.minAzimuthAngle = -Infinity;
                     controls.maxAzimuthAngle = Infinity;
                     controls.minPolarAngle = 0;
                     controls.maxPolarAngle = Math.PI * 0.75;
                 } else {
-                    if (state.isMovingPuzzleBox) return;
+                    if (puzzle.isMovingPuzzleBox) return;
                     ctx.statusElement.innerText = "STATUS: MOVING BOX TO PEDESTAL";
                     scene.attach(ctx.puzzleBox.group);
-                    state.isMovingPuzzleBox = true;
-                    state.isTransitioning = false;
-                    state.pBoxTargetPos.copy(new THREE.Vector3(0, 0.15, 0));
+                    puzzle.isMovingPuzzleBox = true;
+                    cameraState.isTransitioning = false;
+                    puzzle.pBoxTargetPos.copy(new THREE.Vector3(0, 0.15, 0));
                 }
             }
         },
@@ -100,12 +99,12 @@ export function handleDoubleClick(event, ctx) {
         {
             match: t => t.userData.isItem,
             handle: (t, pos) => {
-                if (t.userData.itemName === 'Old Key' && !state.isZoomedOnFoot) return;
+                if (t.userData.itemName === 'Old Key' && !cameraState.isZoomedOnFoot) return;
                 
                 if (pos.distanceTo(controls.target) < 1.1) {
                      ctx.pickupItem(t);
                 } else if (t.userData.isZoomable !== false) {
-                     state.isZoomedOnFoot = false;
+                     cameraState.isZoomedOnFoot = false;
                      zoomTo(pos, 1.0);
                 }
             }
@@ -114,7 +113,7 @@ export function handleDoubleClick(event, ctx) {
         {
             match: t => t.userData.isStaticPuzzlePart,
             handle: (t, pos) => {
-                state.isZoomedOnFoot = false;
+                cameraState.isZoomedOnFoot = false;
                 
                 if (t.userData.isPainting) {
                     const rotY = t.rotation.y;
@@ -122,8 +121,8 @@ export function handleDoubleClick(event, ctx) {
                         ? new THREE.Vector3(1, 0, 0) 
                         : new THREE.Vector3(0, 0, 1);
                     
-                    if (state.inventory.some(i => i.name.toLowerCase().includes('bird'))) {
-                        state.showBirdInFocus = true;
+                    if (uiState.inventory.some(i => i.name.toLowerCase().includes('bird'))) {
+                        puzzle.showBirdInFocus = true;
                         console.log("ALIGNMENT TRIGGERED: Iron Bird found in inventory.");
                     }
                     zoomTo(pos, 2.4, null, camOffset);
@@ -133,7 +132,7 @@ export function handleDoubleClick(event, ctx) {
                     controls.maxAzimuthAngle = Infinity;
                 } else if (t.userData.isSecretSquare) {
                     if (camera.position.distanceTo(pos) < 1.5) {
-                        state.isSecretSquareTriggered = true; 
+                        puzzle.isSecretSquareTriggered = true; 
                     } else {
                         zoomTo(pos, 0.8, null, new THREE.Vector3(-0.6, 0, 0)); 
                     }
@@ -153,7 +152,7 @@ export function handleDoubleClick(event, ctx) {
         {
             match: t => t.userData.index !== undefined && (t.parent === cabinet.drawerGroups[1] || (t.parent && t.parent.parent === cabinet.drawerGroups[1])),
             handle: (t, pos) => {
-                 state.isZoomedOnFoot = false;
+                 cameraState.isZoomedOnFoot = false;
                  zoomTo(pos, 1.2, null, new THREE.Vector3(0, 0.4, 0.6));
                  controls.minAzimuthAngle = -Math.PI / 6;
                  controls.maxAzimuthAngle = Math.PI / 6;
@@ -165,7 +164,7 @@ export function handleDoubleClick(event, ctx) {
         {
             match: t => t.userData.drawerIndex !== undefined && !t.userData.isStaticPuzzlePart,
             handle: (t, pos) => {
-                state.isZoomedOnFoot = false;
+                cameraState.isZoomedOnFoot = false;
                 zoomTo(pos, 1.5, null, new THREE.Vector3(0, 0.4, 0.8));
                 controls.minAzimuthAngle = -Math.PI / 4;
                 controls.maxAzimuthAngle = Math.PI / 4;
@@ -175,7 +174,7 @@ export function handleDoubleClick(event, ctx) {
         {
             match: t => t.userData.isRotatable || t.userData.isFooting,
             handle: (t, pos) => {
-                state.isZoomedOnFoot = true;
+                cameraState.isZoomedOnFoot = true;
                 if (t.userData.isRotatable) {
                     zoomTo(pos, 1.0, null, new THREE.Vector3(10, 10, 3));
                     controls.minAzimuthAngle = -Math.PI;
@@ -191,8 +190,8 @@ export function handleDoubleClick(event, ctx) {
         {
             match: t => t.userData.isPadlock || t.userData.isPadlockWheel || t.userData.isPadlockButton,
             handle: (t, pos) => {
-                state.isZoomedOnFoot = false;
-                state.isZoomedOnPadlock = true;
+                cameraState.isZoomedOnFoot = false;
+                cameraState.isZoomedOnPadlock = true;
                 
                 if (t.userData.isPadlockWheel || t.userData.isPadlockButton) {
                     zoomTo(pos, 2.0, null, new THREE.Vector3(0, 0.4, 0.6));
@@ -210,7 +209,7 @@ export function handleDoubleClick(event, ctx) {
         {
             match: t => t.userData.isCabinetBody,
             handle: (t, pos) => {
-                state.isZoomedOnFoot = false;
+                cameraState.isZoomedOnFoot = false;
                 const cabPos = new THREE.Vector3();
                 cabinet.group.getWorldPosition(cabPos);
                 zoomTo(cabPos, 4.0, null, new THREE.Vector3(0, 0.5, 1.2));

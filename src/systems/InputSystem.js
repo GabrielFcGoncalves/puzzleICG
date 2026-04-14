@@ -13,7 +13,6 @@ export class InputSystem {
     constructor(world) {
         this.world = world;
         this.store = world.store;
-        this.state = world.store.state;
         this.camera = world.camera;
         this.scene = world.scene;
         this.renderer = world.renderer;
@@ -26,41 +25,41 @@ export class InputSystem {
 
     init() {
         // Scene Click Listeners
-        window.addEventListener('dblclick', (e) => handleDoubleClick(e, this.world));
-        window.addEventListener('mousedown', (e) => handleMouseDown(e, this.world));
-        window.addEventListener('mousemove', (e) => handleMouseMove(e, this.world));
-        window.addEventListener('mouseup', (e) => handleMouseUp(e, this.world));
-        window.addEventListener('keydown', (e) => handleKeyDown(e, this.world));
+        globalThis.addEventListener('dblclick', (e) => handleDoubleClick(e, this.world));
+        globalThis.addEventListener('mousedown', (e) => handleMouseDown(e, this.world));
+        globalThis.addEventListener('mousemove', (e) => handleMouseMove(e, this.world));
+        globalThis.addEventListener('mouseup', (e) => handleMouseUp(e, this.world));
+        globalThis.addEventListener('keydown', (e) => handleKeyDown(e, this.world));
 
         // Inventory Drag/Drop Listeners
-        window.addEventListener('mousemove', (e) => this.handleGlobalMouseMove(e));
-        window.addEventListener('mouseup', (e) => this.handleGlobalMouseUp(e));
+        globalThis.addEventListener('mousemove', (e) => this.handleGlobalMouseMove(e));
+        globalThis.addEventListener('mouseup', (e) => this.handleGlobalMouseUp(e));
 
         // Config other listeners
-        window.addEventListener('resize', (e) => handleResize(e, this.world));
-        window.addEventListener('contextmenu', (e) => handleContextMenu(e, this.world));
+        globalThis.addEventListener('resize', (e) => handleResize(e, this.world));
+        globalThis.addEventListener('contextmenu', (e) => handleContextMenu(e, this.world));
         this.controls.addEventListener('start', () => handleControlsStart(this.world));
     }
 
     handleGlobalMouseMove(e) {
-        if (this.state.draggedInventoryIndex !== -1) {
+        if (this.store.ui.draggedInventoryIndex !== -1) {
             this.world.uiManager.updateDragOverlay(e.clientX, e.clientY);
         }
     }
 
     handleGlobalMouseUp(e) {
-        if (this.state.draggedInventoryIndex === -1) return;
+        if (this.store.ui.draggedInventoryIndex === -1) return;
 
         const slots = this.world.uiManager.slots;
-        if (slots[this.state.draggedInventoryIndex]) {
-            slots[this.state.draggedInventoryIndex].style.opacity = '1';
+        if (slots[this.store.ui.draggedInventoryIndex]) {
+            slots[this.store.ui.draggedInventoryIndex].style.opacity = '1';
         }
 
-        const itemData = this.state.inventory[this.state.draggedInventoryIndex];
+        const itemData = this.store.ui.inventory[this.store.ui.draggedInventoryIndex];
 
         // Raycast for drop target
-        this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-        this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        this.mouse.x = (e.clientX / globalThis.innerWidth) * 2 - 1;
+        this.mouse.y = -(e.clientY / globalThis.innerHeight) * 2 + 1;
         this.raycaster.setFromCamera(this.mouse, this.camera);
 
         const hits = this.raycaster.intersectObjects(this.scene.children, true);
@@ -69,7 +68,7 @@ export class InputSystem {
             this.processDrop(hitObj, itemData);
         }
 
-        this.state.draggedInventoryIndex = -1;
+        this.store.ui.draggedInventoryIndex = -1;
         this.world.uiManager.hideDragOverlay();
     }
 
@@ -91,7 +90,7 @@ export class InputSystem {
                 this.world.cabinet.isKeyInserted = true;
                 this.world.cabinet.keyPivot.visible = true;
                 this.world.uiManager.setStatus("KEY INSERTED - DRAG IT TO TURN");
-                this.state.inventory.splice(this.state.draggedInventoryIndex, 1);
+                this.store.ui.inventory.splice(this.store.ui.draggedInventoryIndex, 1);
             }
         }
 
@@ -123,10 +122,10 @@ export class InputSystem {
             this.world.mainScene.enableShadows(f.group);
             
             this.world.uiManager.setStatus("FLASHLIGHT MOUNTED ON STAND");
-            this.state.inventory.splice(this.state.draggedInventoryIndex, 1);
+            this.store.ui.inventory.splice(this.store.ui.draggedInventoryIndex, 1);
         }
 
         // Update UI slots
-        this.world.uiManager.updateInventory(this.state.inventory);
+        this.world.uiManager.updateInventory(this.store.ui.inventory);
     }
 }

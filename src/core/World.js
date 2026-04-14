@@ -79,7 +79,7 @@ export class World {
     }
 
     startDraggingInventory(index, imgHTML, x, y) {
-        this.store.state.draggedInventoryIndex = index;
+        this.store.ui.draggedInventoryIndex = index;
         this.uiManager.showDragOverlay(imgHTML, x, y);
         this.uiManager.slots[index].style.opacity = '0.3';
     }
@@ -93,19 +93,25 @@ export class World {
         this.store.closeInspection();
     }
 
-    // Proxy methods for store/state actions with arrow functions to maintain scope
+    // Proxy methods for store actions with arrow functions to maintain scope
     zoomTo = (...args) => { this.store.zoomTo(...args); }
     resetZoom = (...args) => { this.store.resetZoom(...args); }
     pickupItem = (...args) => { this.store.pickupItem(...args); }
     detachCamera = (...args) => { this.store.detachCamera(...args); }
     handleResize = (...args) => { rendererResize(...args); }
 
-    // Helper functions for listeners to access objects
+    // --- State slice accessors for listeners ---
+    // Listeners destructure these from the context (ctx) object.
+    get interaction() { return this.store.interaction; }
+    get cameraState() { return this.store.camera; }
+    get puzzle() { return this.store.puzzle; }
+    get uiState() { return this.store.ui; }
+
+    // Helper accessors for objects
     get cabinet() { return this.mainScene.objects.cabinet; }
     get scene() { return this.mainScene.scene; }
     get birdProxy() { return this.mainScene.birdProxy; }
     get puzzleBox() { return this.mainScene.objects.pBox; }
-    get state() { return this.store.state; }
     get statusElement() { return this.uiManager.statusElement; }
     get overlayElement() { return this.uiManager.overlayElement; }
 
