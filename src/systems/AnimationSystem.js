@@ -82,7 +82,7 @@ export class AnimationSystem {
         const birdProxy = this.mainScene.birdProxy;
         if (this.store.puzzle.showBirdInFocus && birdProxy && birdProxy.children.length > 0) {
             birdProxy.visible = true;
-            birdProxy.position.set(-4, 1.5, 0); // user manual change
+            birdProxy.position.set(-4, 1.35, -0.1); // user manual change
             birdProxy.scale.set(0.3, 0.3, 0.3);
 
             // --- Alignment Puzzle Logic ---

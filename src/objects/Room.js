@@ -282,6 +282,9 @@ export class Room {
                 this.birdCanvas.visible = true; // Always visible as per new dynamcis
             }
 
+            frame.receiveShadow = true;
+            canvas.receiveShadow = true;
+
             pGroup.add(frame, canvas);
             pGroup.position.set(x, y, z);
             pGroup.rotation.y = rotY;
@@ -423,16 +426,28 @@ export class Room {
         this.scene.add(this.group);
     }
 
-    update(isEthereal, isBirdPuzzleSolved) {
+    update(isEthereal, isBirdPuzzleSolved, ctx) {
         if (this.secretMark) {
             this.secretMark.visible = isEthereal;
         }
+
+        const isHovered = ctx?.interaction?.hoveredSlot?.userData?.isPainting;
+        const isDraggingBird = ctx?.uiState?.draggedInventoryIndex !== -1 && 
+                             ctx?.uiState?.inventory[ctx?.uiState?.draggedInventoryIndex]?.name.toLowerCase().includes('bird');
+        
+        const showPreview = isHovered && isDraggingBird && !isBirdPuzzleSolved;
+
         if (this.birdCanvas) {
             // Before alignment: White background. 
             // After alignment: Bird image revealed, regardless of Space/Ethereal mode.
             if (isBirdPuzzleSolved) {
                 this.birdCanvas.material = this.birdPaintingMaterial;
                 this.birdCanvas.visible = true; 
+            } else if (showPreview) {
+                this.birdCanvas.material = this.birdPaintingMaterial;
+                this.birdCanvas.material.transparent = true;
+                this.birdCanvas.material.opacity = 0.4;
+                this.birdCanvas.visible = true;
             } else {
                 this.birdCanvas.material = this.whiteMaterial;
                 this.birdCanvas.visible = true; // Always visible now as requested

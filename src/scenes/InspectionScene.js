@@ -24,21 +24,42 @@ export class InspectionScene {
     }
 
     open(itemData) {
+        console.log("Opening Inspection for:", itemData.name);
         if (this.currentInspectedGroup) this.scene.remove(this.currentInspectedGroup);
 
         this.currentInspectedGroup = itemData.instance.cloneGroup();
         this.currentInspectedGroup.position.set(0, 0, 0);
         this.currentInspectedGroup.rotation.set(0, 0, 0);
 
-        const box = new THREE.Box3().setFromObject(this.currentInspectedGroup);
-        const sphere = box.getBoundingSphere(new THREE.Sphere());
-        const center = box.getCenter(new THREE.Vector3());
-        this.currentInspectedGroup.position.sub(center);
+        // Ensure all materials are visible and not too transparent
+        this.currentInspectedGroup.traverse(node => {
+            if (node.isMesh) {
+                node.material = node.material.clone();
+                node.material.transparent = false;
+                node.material.opacity = 1.0;
+            }
+        });
 
-        const fov = this.camera.fov * (Math.PI / 180);
-        const dist = sphere.radius / Math.sin(fov / 2);
-        this.camera.position.set(0, 0, dist * 1.1);
+        // Compute bounding box after a short delay or force update to ensure meshes are ready
+        this.currentInspectedGroup.updateMatrixWorld(true);
+        const box = new THREE.Box3().setFromObject(this.currentInspectedGroup);
+        
+        if (box.isEmpty()) {
+            console.warn("Item box is empty, possible loading issue for:", itemData.name);
+            // Fallback: use a default distance
+            this.camera.position.set(0, 0, 1);
+        } else {
+            const sphere = box.getBoundingSphere(new THREE.Sphere());
+            const center = box.getCenter(new THREE.Vector3());
+            this.currentInspectedGroup.position.sub(center);
+
+            const fov = this.camera.fov * (Math.PI / 180);
+            const dist = (sphere.radius || 0.5) / Math.sin(fov / 2);
+            this.camera.position.set(0, 0, dist * 1.2);
+        }
+
         this.controls.target.set(0, 0, 0);
+        this.controls.update();
 
         this.scene.add(this.currentInspectedGroup);
     }

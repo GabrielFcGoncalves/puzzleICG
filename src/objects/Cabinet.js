@@ -287,9 +287,25 @@ export class Cabinet {
         // Smooth wheel rotation
         this.padlock.update(this.isUnlocked);
 
-        // Smooth key rotation if turned
-        if (this.isKeyInserted && this.keyPivot) {
-            const targetZ = this.isKeyTurned ? -Math.PI / 2 : 0; // 45 degrees
+        // Smooth key rotation if turned or preview visibility
+        if (this.keyPivot) {
+            const isHovered = ctx.interaction.hoveredSlot === this.keyLock;
+            const isDraggingKey = ctx.uiState.draggedInventoryIndex !== -1 && 
+                                ctx.uiState.inventory[ctx.uiState.draggedInventoryIndex].name === 'Old Key';
+            
+            const showPreview = isHovered && isDraggingKey && !this.isKeyInserted;
+            
+            this.keyPivot.visible = this.isKeyInserted || showPreview;
+            
+            // Ghost effect for preview
+            this.insertedKeyObj.group.traverse(node => {
+                if (node.isMesh) {
+                    node.material.transparent = true;
+                    node.material.opacity = showPreview ? 0.4 : 1.0;
+                }
+            });
+
+            const targetZ = this.isKeyTurned ? -Math.PI / 2 : 0;
             this.keyPivot.rotation.z = THREE.MathUtils.lerp(
                 this.keyPivot.rotation.z,
                 targetZ,

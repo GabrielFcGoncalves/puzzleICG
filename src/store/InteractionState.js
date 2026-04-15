@@ -13,6 +13,7 @@ export class InteractionState {
         this.initialMouseY = 0;
         this.initialRotationY = 0;
         this.initialRotationX = 0;
+        this.hoveredSlot = null; // Entity being hovered during inventory drag
     }
 
     /**
@@ -26,5 +27,6 @@ export class InteractionState {
         this.isDraggingBird = false;
         this.draggedDrawerIndex = -1;
         this.rotatedFooting = null;
+        this.hoveredSlot = null;
     }
 }

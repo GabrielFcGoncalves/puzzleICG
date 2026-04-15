@@ -37,14 +37,30 @@ export class UIManager {
                 this.slots[index].innerHTML = imgHTML;
                 this.slots[index].title = itemData.name;
 
-                // Move mouse down handler here?
                 this.slots[index].onmousedown = (e) => {
                     e.preventDefault();
-                    this.ctx.startDraggingInventory(index, imgHTML, e.clientX, e.clientY);
-                };
+                    const startX = e.clientX;
+                    const startY = e.clientY;
+                    let moved = false;
 
-                this.slots[index].onclick = (e) => {
-                    // Logic handled by startDraggingInventory for short clicks
+                    const onMouseMove = (moveEvent) => {
+                        if (Math.abs(moveEvent.clientX - startX) > 5 || Math.abs(moveEvent.clientY - startY) > 5) {
+                            moved = true;
+                            this.ctx.startDraggingInventory(index, imgHTML, moveEvent.clientX, moveEvent.clientY);
+                            window.removeEventListener('mousemove', onMouseMove);
+                        }
+                    };
+
+                    const onMouseUp = () => {
+                        window.removeEventListener('mousemove', onMouseMove);
+                        window.removeEventListener('mouseup', onMouseUp);
+                        if (!moved) {
+                            this.ctx.openInspection(itemData);
+                        }
+                    };
+
+                    window.addEventListener('mousemove', onMouseMove);
+                    window.addEventListener('mouseup', onMouseUp);
                 };
             }
         });

@@ -54,12 +54,13 @@ export class Flashlight extends Item {
 
         // --- Spot Light Beam (initially off) ---
         // Adjust beam position and direction for the new model
-        this.beam = new THREE.SpotLight(0xffffee, 0, 8, Math.PI / 10, 0.3, 1);
+        this.beam = new THREE.SpotLight(0xffffee, 0, 10, Math.PI / 12, 0.2, 1);
         this.beam.castShadow = true;
-        this.beam.shadow.mapSize.width = 1024; 
-        this.beam.shadow.mapSize.height = 1024;
-        this.beam.shadow.bias = -0.0001; 
-        this.beam.shadow.normalBias = 0.02; 
+        this.beam.shadow.mapSize.width = 2048;
+        this.beam.shadow.mapSize.height = 2048;
+        this.beam.shadow.bias = -0.0001;
+        this.beam.shadow.normalBias = 0.02;
+        this.beam.shadow.radius = 1; // Hard shadow edge for maximum darkness contrast
         
         // Lens is roughly at (0, 0, 0.2) if model scale is 0.2 and it's long along Z
         this.beam.position.set(0, 0, 0.2); 
@@ -77,7 +78,7 @@ export class Flashlight extends Item {
         this.isOn = !this.isOn;
         if (this.isOn) {
             if (this.switchMesh) this.switchMesh.position.y = 0.032; // Clicks in
-            this.beam.intensity = 200;
+            this.beam.intensity = 120;
         } else {
             if (this.switchMesh) this.switchMesh.position.y = 0.04;
             this.beam.intensity = 0;

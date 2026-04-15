@@ -44,7 +44,30 @@ export class InputSystem {
     handleGlobalMouseMove(e) {
         if (this.store.ui.draggedInventoryIndex !== -1) {
             this.world.uiManager.updateDragOverlay(e.clientX, e.clientY);
+
+            // Raycast for preview
+            this.mouse.x = (e.clientX / globalThis.innerWidth) * 2 - 1;
+            this.mouse.y = -(e.clientY / globalThis.innerHeight) * 2 + 1;
+            this.raycaster.setFromCamera(this.mouse, this.camera);
+
+            const hits = this.raycaster.intersectObjects(this.scene.children, true);
+            if (hits.length > 0) {
+                this.store.interaction.hoveredSlot = this.findInteractionTarget(hits[0].object);
+            } else {
+                this.store.interaction.hoveredSlot = null;
+            }
         }
+    }
+
+    findInteractionTarget(hitObj) {
+        let search = hitObj;
+        while (search) {
+            if (search.userData.isLock || search.userData.isStand || search.userData.isPainting) {
+                return search;
+            }
+            search = search.parent;
+        }
+        return null;
     }
 
     handleGlobalMouseUp(e) {
@@ -64,48 +87,28 @@ export class InputSystem {
 
         const hits = this.raycaster.intersectObjects(this.scene.children, true);
         if (hits.length > 0) {
-            let hitObj = hits[0].object;
-            this.processDrop(hitObj, itemData);
+            const target = this.findInteractionTarget(hits[0].object);
+            this.processDrop(target, itemData);
         }
 
+        this.store.interaction.hoveredSlot = null;
         this.store.ui.draggedInventoryIndex = -1;
         this.world.uiManager.hideDragOverlay();
     }
 
-    processDrop(hitObj, itemData) {
-        // Cabinet Drop Logic (Key)
-        let cabinetSearch = hitObj;
-        let targetCabinetDrawer = null;
-        while (cabinetSearch) {
-            if (this.world.cabinet.drawerGroups.includes(cabinetSearch)) {
-                targetCabinetDrawer = cabinetSearch;
-                break;
-            }
-            cabinetSearch = cabinetSearch.parent;
-        }
+    processDrop(target, itemData) {
+        if (!target) return;
 
-        if (targetCabinetDrawer) {
-            const drawerIndex = this.world.cabinet.drawerGroups.indexOf(targetCabinetDrawer);
-            if (drawerIndex === 0 && itemData.name === 'Old Key' && !this.world.cabinet.isKeyInserted) {
-                this.world.cabinet.isKeyInserted = true;
-                this.world.cabinet.keyPivot.visible = true;
-                this.world.uiManager.setStatus("KEY INSERTED - DRAG IT TO TURN");
-                this.store.ui.inventory.splice(this.store.ui.draggedInventoryIndex, 1);
-            }
+        // Cabinet Drop Logic (Key)
+        if (target.userData.isLock && itemData.name === 'Old Key' && !this.world.cabinet.isKeyInserted) {
+            this.world.cabinet.isKeyInserted = true;
+            this.world.cabinet.keyPivot.visible = true;
+            this.world.uiManager.setStatus("KEY INSERTED - DRAG IT TO TURN");
+            this.store.ui.inventory.splice(this.store.ui.draggedInventoryIndex, 1);
         }
 
         // Stand Drop Logic (Flashlight)
-        let standSearch = hitObj;
-        let targetStand = null;
-        while (standSearch) {
-            if (standSearch.userData.isStand) {
-                targetStand = standSearch;
-                break;
-            }
-            standSearch = standSearch.parent;
-        }
-
-        if (targetStand && itemData.name === 'Old Flashlight') {
+        if (target.userData.isStand && itemData.name === 'Old Flashlight') {
             const f = new Flashlight(this.world.loadingManager);
             f.setPosition(-1.1, 1.15, 0); 
             f.group.scale.set(1.2, 1.2, 1.2);

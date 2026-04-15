@@ -53,6 +53,34 @@ export class Stand {
         this.scene.add(this.group);
     }
 
+    setGhostFlashlight(flashlightGroup) {
+        this.ghostFlashlight = flashlightGroup;
+        this.ghostFlashlight.visible = false;
+        this.group.add(this.ghostFlashlight);
+    }
+
+    update(isEthereal, isHintMode, statusElement, ctx) {
+        if (this.ghostFlashlight) {
+            const isHovered = ctx.interaction.hoveredSlot === this.group;
+            const isDraggingFlashlight = ctx.uiState.draggedInventoryIndex !== -1 && 
+                                       ctx.uiState.inventory[ctx.uiState.draggedInventoryIndex].name === 'Old Flashlight';
+            
+            const hasMountedFlashlight = this.scene.children.some(c => c.userData.isMountedFlashlight);
+
+            const showPreview = isHovered && isDraggingFlashlight && !hasMountedFlashlight;
+            
+            this.ghostFlashlight.visible = showPreview;
+            if (showPreview) {
+                this.ghostFlashlight.traverse(node => {
+                    if (node.isMesh) {
+                        node.material.transparent = true;
+                        node.material.opacity = 0.4;
+                    }
+                });
+            }
+        }
+    }
+
     setPosition(x, y, z) {
         this.group.position.set(x, y, z);
     }

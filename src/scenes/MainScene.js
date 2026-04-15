@@ -103,7 +103,10 @@ export class MainScene {
             
             this.birdProxy.add(bird);
             this.birdProxy.visible = false;
-            
+
+            // Enable shadows now that the async model is loaded
+            this.enableShadows(this.birdProxy);
+
             // Initial scrambled rotation (Hardcoded)
             this.birdProxy.rotation.x = 0.4;
             this.birdProxy.rotation.y = 1.2;
