@@ -41,8 +41,14 @@ export class HoverCursorHandler extends MouseMoveHandler {
     checkHandleInteraction(handleHover, cabinet) {
         if (handleHover.length === 0) return false;
         const h = handleHover[0].object;
+        
+        // Handle door handle
+        if (h.userData.isDoorHandle) return true;
+        
         const drawerIndex = h.userData.drawerIndex;
+        if (drawerIndex === undefined) return false;
+        
         const dGroup = cabinet.drawerGroups[drawerIndex];
-        return !dGroup.userData.isLocked;
+        return dGroup && !dGroup.userData.isLocked;
     }
 }

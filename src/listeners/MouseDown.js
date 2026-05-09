@@ -5,6 +5,7 @@ import { KeyTurningHandler } from './mousedown/KeyTurningHandler.js';
 import { FootRotationHandler } from './mousedown/FootRotationHandler.js';
 import { DrawerDragHandler } from './mousedown/DrawerDragHandler.js';
 import { BirdRotationHandler } from './mousedown/BirdRotationHandler.js';
+import { DoorDragHandler } from './mousedown/DoorDragHandler.js';
 
 // ============================================================================
 // HANDLER REGISTRY
@@ -22,6 +23,7 @@ const MOUSEDOWN_HANDLERS = [
     new FootRotationHandler(),
     new DrawerDragHandler(),
     new BirdRotationHandler(),
+    new DoorDragHandler(),
 ];
 
 // ============================================================================

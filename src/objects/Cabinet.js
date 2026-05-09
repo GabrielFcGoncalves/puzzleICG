@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createWheelTexture, createNoteTexture, createClueTexture } from '../utils/Textures.js';
+import { createWheelTexture, createNoteTexture, createClueTexture, createFingerprintTexture } from '../utils/Textures.js';
 import { Key } from './Key.js';
 import { Padlock } from './Padlock.js';
 
@@ -30,6 +30,7 @@ export class Cabinet {
         // --- Textures ---
         this.wheelSideTex = createWheelTexture();
         this.clueTex = createClueTexture();
+        this.fingerprintTex = createFingerprintTexture();
 
         // ─────────────────────────────────────────────────────────────
         // Cabinet body  (W × H × D)
@@ -119,6 +120,20 @@ export class Cabinet {
                 footMesh.add(footHitBox);
 
                 this.rotatableFoot = footMesh;
+
+                // Add Ethereal Fingerprint Mark
+                const fingerMat = new THREE.MeshBasicMaterial({
+                    map: this.fingerprintTex,
+                    transparent: true,
+                    opacity: 0.9,
+                    blending: THREE.AdditiveBlending,
+                    side: THREE.FrontSide
+                });
+                this.fingerMark = new THREE.Mesh(new THREE.PlaneGeometry(0.12, 0.12), fingerMat);
+                // Position on the OUTSIDE (right side) of the foot (+X)
+                this.fingerMark.position.set(0.12, 0, 0); 
+                this.fingerMark.rotation.y = Math.PI / 2;
+                this.rotatableFoot.add(this.fingerMark);
 
                 // Hide the key inside this foot
                 this.key = new Key();
@@ -315,6 +330,11 @@ export class Cabinet {
 
         // Smooth drawer sliding or door swinging
         this.drawerGroups.forEach((dGroup, i) => {
+            // Lazy load vault items when drawer 0 (Vault) starts to open
+            if (i === 0 && this.currentDrawerZ[i] > dGroup.userData.restZ + 0.01) {
+                ctx.mainScene.loadVaultItems();
+            }
+
             this.currentDrawerZ[i] = THREE.MathUtils.lerp(
                 this.currentDrawerZ[i],
                 this.targetDrawerZ[i],
@@ -364,6 +384,11 @@ export class Cabinet {
             isEthereal ? 1 : 0,
             0.1
         );
+
+        // Fingerprint Visibility (Ethereal)
+        if (this.fingerMark) {
+            this.fingerMark.visible = isEthereal;
+        }
     }
 
     checkPuzzle() {

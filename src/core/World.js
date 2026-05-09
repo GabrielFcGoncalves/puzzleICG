@@ -1,4 +1,8 @@
 import * as THREE from 'three';
+
+// Enable global Three.js caching for all loaders (TextureLoader, GLTFLoader, etc.)
+THREE.Cache.enabled = true;
+
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import Stats from 'three/addons/libs/stats.module.js';
 
@@ -42,6 +46,9 @@ export class World {
             if (loaderText) loaderText.innerText = `${Math.round(p)}% - LOADING ${url.split('/').pop()}`;
         };
         this.loadingManager.onLoad = () => {
+            // Trigger a final shadow refresh once everything is loaded
+            this.mainScene.refreshShadows();
+            
             setTimeout(() => {
                 if (loaderScreen) loaderScreen.classList.add('loading-finished');
             }, 500);
@@ -124,6 +131,17 @@ export class World {
                 }
             });
         });
+
+        // Add door handle
+        const door = this.mainScene?.objects?.door;
+        if (door && door.doorHandle) {
+            door.doorHandle.traverse(child => {
+                if (child.userData.isDoorHandle) {
+                    handles.push(child);
+                }
+            });
+        }
+
         return handles;
     }
 

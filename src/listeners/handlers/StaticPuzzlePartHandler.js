@@ -26,12 +26,23 @@ export class StaticPuzzlePartHandler extends DoubleClickHandler {
             return;
         }
         if (target.userData.isMountedFlashlight) {
-            ctx.zoomTo(worldPos, 0.5, null, new THREE.Vector3(0, 0.3, 0.5));
+            const lookAt = worldPos.clone().add(new THREE.Vector3(0, 0.2, 0));
+            ctx.zoomTo(worldPos, 0.5, lookAt, new THREE.Vector3(0, 0.3, 0.5));
             applyPresetAngles(ctx.controls, CAMERA_PRESETS.free);
+            return;
+        }
+        if (target.userData.isDoor) {
+            this._handleDoor(worldPos, ctx);
             return;
         }
         if (target.userData.isLock) {
             ctx.zoomTo(worldPos, 0.8, null, new THREE.Vector3(0, 0.2, 0.6));
+            return;
+        }
+        if (target.userData.isPaper) {
+            // High-precision zoom for reading paper
+            const lookAt = worldPos.clone();
+            ctx.zoomTo(worldPos, 0.7, lookAt, new THREE.Vector3(-1, 1, 0));
             return;
         }
 
@@ -63,7 +74,8 @@ export class StaticPuzzlePartHandler extends DoubleClickHandler {
     }
 
     _handleStand(worldPos, ctx) {
-        ctx.zoomTo(worldPos, 1.0, null, new THREE.Vector3(0, 0.4, 0.8));
+        const lookAt = worldPos.clone().add(new THREE.Vector3(0, 1, 0));
+        ctx.zoomTo(worldPos, 2, lookAt, new THREE.Vector3(1, 2, 2));
         ctx.controls.minAzimuthAngle = -Infinity;
         ctx.controls.maxAzimuthAngle = Infinity;
     }
@@ -74,5 +86,13 @@ export class StaticPuzzlePartHandler extends DoubleClickHandler {
         } else {
             ctx.zoomTo(worldPos, 0.8, null, new THREE.Vector3(-0.6, 0, 0));
         }
+    }
+
+    _handleDoor(worldPos, ctx) {
+        const targetPos = new THREE.Vector3().copy(worldPos);
+        targetPos.y = 0; 
+        targetPos.x += 0.8; // Shift focus to the left
+        ctx.zoomTo(targetPos, CAMERA_PRESETS.door.zoomLevel, null, CAMERA_PRESETS.door.offset);
+        applyPresetAngles(ctx.controls, CAMERA_PRESETS.door);
     }
 }

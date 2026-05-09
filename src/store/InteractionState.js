@@ -5,6 +5,7 @@ export class InteractionState {
         this.isRotatingFooting = false;
         this.isTurningKey = false;
         this.isDraggingBird = false;
+        this.isDraggingDoor = false;
         this.draggedDrawerIndex = -1;
         this.rotatedFooting = null;
 
@@ -25,6 +26,7 @@ export class InteractionState {
         this.isRotatingFooting = false;
         this.isTurningKey = false;
         this.isDraggingBird = false;
+        this.isDraggingDoor = false;
         this.draggedDrawerIndex = -1;
         this.rotatedFooting = null;
         this.hoveredSlot = null;

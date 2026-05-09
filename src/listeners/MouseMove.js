@@ -3,6 +3,7 @@ import { KeyTurningMoveHandler } from './mousemove/KeyTurningMoveHandler.js';
 import { DrawerDragMoveHandler } from './mousemove/DrawerDragMoveHandler.js';
 import { BirdRotationMoveHandler } from './mousemove/BirdRotationMoveHandler.js';
 import { HoverCursorHandler } from './mousemove/HoverCursorHandler.js';
+import { DoorDragMoveHandler } from './mousemove/DoorDragMoveHandler.js';
 
 // ============================================================================
 // HANDLER REGISTRY
@@ -17,6 +18,7 @@ const DRAG_HANDLERS = [
     new KeyTurningMoveHandler(),
     new DrawerDragMoveHandler(),
     new BirdRotationMoveHandler(),
+    new DoorDragMoveHandler(),
 ];
 
 const HOVER_HANDLER = new HoverCursorHandler();

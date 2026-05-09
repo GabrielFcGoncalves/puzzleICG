@@ -12,6 +12,10 @@ export class AnimationSystem {
         this.camera = world.camera;
 
         this.animate = this.animate.bind(this);
+        
+        // Frustum culling for logic
+        this.frustum = new THREE.Frustum();
+        this.projScreenMatrix = new THREE.Matrix4();
     }
 
     start() {
@@ -28,12 +32,20 @@ export class AnimationSystem {
         } else {
             this.updateShadows();
             this.updateTransitions();
+            
+            // Update frustum for logic culling
+            this.projScreenMatrix.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
+            this.frustum.setFromProjectionMatrix(this.projScreenMatrix);
+
             this.updateMainScene();
             this.updateBirdProxy();
-            this.updateClamping();
-            this.updatePuzzleBoxMovement();
 
+            this.updatePuzzleBoxMovement();
+            this.updateDoorRotation();
             this.controls.update();
+
+
+
             this.renderer.render(this.mainScene.scene, this.camera);
         }
     }
@@ -66,12 +78,22 @@ export class AnimationSystem {
 
     updateMainScene() {
         this.mainScene.update();
-        this.mainScene.objects.cabinet.update(
-            this.store.ui.isEthereal,
-            this.store.ui.isHintMode,
-            this.world.uiManager.statusElement,
-            this.world
-        );
+
+        // Optimized: Only update cabinet if it's potentially visible
+        const cabinet = this.mainScene.objects.cabinet;
+        if (!this.cabinetBox) {
+            this.cabinetBox = new THREE.Box3().setFromObject(cabinet.group);
+        }
+        
+        if (this.frustum.intersectsBox(this.cabinetBox)) {
+            cabinet.update(
+                this.store.ui.isEthereal,
+                this.store.ui.isHintMode,
+                this.world.uiManager.statusElement,
+                this.world
+            );
+        }
+
         this.mainScene.objects.room.update(
             this.store.ui.isEthereal,
             this.store.puzzle.isBirdPuzzleSolved
@@ -81,8 +103,15 @@ export class AnimationSystem {
     updateBirdProxy() {
         const birdProxy = this.mainScene.birdProxy;
         if (this.store.puzzle.showBirdInFocus && birdProxy && birdProxy.children.length > 0) {
+            // Optimization: If the bird hasn't rotated and it's not solved, we can skip complex logic
+            // But we need to check alignment for the 2s timer, so we only skip if solved.
+            if (this.store.puzzle.isBirdPuzzleSolved) {
+                birdProxy.visible = true; // Still keep it visible
+                return;
+            }
+
             birdProxy.visible = true;
-            birdProxy.position.set(-4, 1.35, -0.1); // user manual change
+            birdProxy.position.set(-4, 1.35, -0.1); 
             birdProxy.scale.set(0.3, 0.3, 0.3);
 
             // --- Alignment Puzzle Logic ---
@@ -108,6 +137,9 @@ export class AnimationSystem {
                     this.puzzleTimer = null;
                 }
             }
+        } else if (this.store.puzzle.showBirdInFocus) {
+            // Trigger lazy load for bird proxy if focus requested but children not loaded
+            this.mainScene.loadBirdProxy();
         } else {
             birdProxy.visible = false;
         }
@@ -125,6 +157,8 @@ export class AnimationSystem {
 
         // --- Handle Secret Square Transition ---
         if (this.store.puzzle.isSecretSquareTriggered) {
+            this.mainScene.loadSecretItems();
+            
             const square = this.mainScene.objects.room.secretSquare;
             if (square) {
                 const targetX = (this.mainScene.objects.room.size / 2) - 0.05; 
@@ -143,14 +177,7 @@ export class AnimationSystem {
         }
     }
 
-    updateClamping() {
-        if (!this.store.camera.camClampingDisabled) {
-            const limitX = 4.8, limitZ = 4.8, limitYTop = 3.5, limitYBottom = -1.5;
-            this.camera.position.x = THREE.MathUtils.clamp(this.camera.position.x, -limitX, limitX);
-            this.camera.position.z = THREE.MathUtils.clamp(this.camera.position.z, -limitZ, limitZ);
-            this.camera.position.y = THREE.MathUtils.clamp(this.camera.position.y, limitYBottom, limitYTop);
-        }
-    }
+
 
     updatePuzzleBoxMovement() {
         const pBox = this.mainScene.objects.pBox;
@@ -164,6 +191,9 @@ export class AnimationSystem {
             this.camera.position.lerp(targetCamPos, 0.3);
             this.controls.target.lerp(worldPos, 0.3);
             
+            // Trigger lazy load if not already loaded
+            this.mainScene.loadVaultItems();
+
             pBox.group.position.lerp(this.store.puzzle.pBoxTargetPos, 0.05);
             
             if (pBox.group.position.distanceTo(this.store.puzzle.pBoxTargetPos) < 0.1) {
@@ -180,4 +210,16 @@ export class AnimationSystem {
             }
         }
     }
+
+    updateDoorRotation() {
+        const door = this.mainScene.objects.door;
+        if (!door || !door.doorMesh) return;
+
+        // Optimized: Dirty check for door rotation
+        if (this._lastDoorRotation === this.store.puzzle.doorRotation) return;
+
+        door.doorMesh.rotation.y = this.store.puzzle.doorRotation;
+        this._lastDoorRotation = this.store.puzzle.doorRotation;
+    }
+
 }

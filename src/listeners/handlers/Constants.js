@@ -17,7 +17,7 @@ export const CAMERA_PRESETS = {
         azimuth: [-Math.PI, Math.PI],
         polar: [Math.PI * 0.4, Math.PI * 0.75],
         zoomLevel: 1.0,
-        offset: new THREE.Vector3(10, 10, 3)
+        offset: new THREE.Vector3(0.2, 0.2, 0.4)
     },
     painting: {
         azimuth: [-Infinity, Infinity],
@@ -36,6 +36,12 @@ export const CAMERA_PRESETS = {
         polar: [0, Math.PI],
         zoomLevel: 1.0,
         offset: new THREE.Vector3(0, 0, 0)
+    },
+    door: {
+        azimuth: [-Infinity, Infinity],
+        polar: [0, Math.PI * 0.75],
+        zoomLevel: 3.6,
+        offset: new THREE.Vector3(0, 1.2, -1.8)
     }
 };
 

@@ -14,9 +14,13 @@ export class DrawerDragHandler extends MouseDownHandler {
 
         const handleObj = handleHits[0].object;
         this.drawerIndex = handleObj.userData.drawerIndex;
-        const drawer = ctx.cabinet.drawerGroups[this.drawerIndex];
 
-        return !drawer.userData.isLocked;
+        if (this.drawerIndex === undefined) {
+            return false;
+        }
+
+        const drawer = ctx.cabinet.drawerGroups[this.drawerIndex];
+        return drawer && !drawer.userData.isLocked;
     }
 
     handle(ctx) {

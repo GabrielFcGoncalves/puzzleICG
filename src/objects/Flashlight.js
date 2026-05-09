@@ -56,8 +56,8 @@ export class Flashlight extends Item {
         // Adjust beam position and direction for the new model
         this.beam = new THREE.SpotLight(0xffffee, 0, 10, Math.PI / 12, 0.2, 1);
         this.beam.castShadow = true;
-        this.beam.shadow.mapSize.width = 2048;
-        this.beam.shadow.mapSize.height = 2048;
+        this.beam.shadow.mapSize.width = 512;
+        this.beam.shadow.mapSize.height = 512;
         this.beam.shadow.bias = -0.0001;
         this.beam.shadow.normalBias = 0.02;
         this.beam.shadow.radius = 1; // Hard shadow edge for maximum darkness contrast

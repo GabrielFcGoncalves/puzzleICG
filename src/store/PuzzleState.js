@@ -13,5 +13,9 @@ export class PuzzleState {
 
         // Hidden wall panel
         this.isSecretSquareTriggered = false;
+
+        // Exit Door
+        this.doorRotation = 0;
+        this.isOpeningDoor = false;
     }
 }
