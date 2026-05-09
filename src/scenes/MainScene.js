@@ -7,19 +7,23 @@ import { createCameraFlashlight } from './lights/CameraFlashlight.js';
 import { createDoorLight } from './lights/DoorLight.js';
 import { WallChandelier } from './lights/WallChandelier.js';
 import { Room } from '../objects/room/Room.js';
-import { Cabinet } from '../objects/Cabinet.js';
+import { Cabinet } from '../objects/cabinet/Cabinet.js';
 import { Stand } from '../objects/Stand.js';
 import { PuzzleBox } from '../objects/PuzzleBox.js';
 import { Flashlight } from '../objects/Flashlight.js';
 import { Door } from '../objects/Door.js';
 import { Paper } from '../objects/Paper.js';
+import { TableLamp } from '../objects/TableLamp.js';
+import { Pen } from '../objects/Pen.js';
+import { MetalPlatting } from '../objects/MetalPlatting.js';
 import { ModelLoader } from '../utils/ModelLoader.js';
 
 export class MainScene {
-    constructor(camera, loadingManager) {
+    constructor(camera, loadingManager, world) {
         this.scene = new THREE.Scene();
         this.camera = camera;
         this.loadingManager = loadingManager || new THREE.LoadingManager();
+        this.world = world;
         this.modelLoader = new ModelLoader(this.loadingManager);
         this.objects = {};
         this.lights = {};
@@ -47,9 +51,6 @@ export class MainScene {
         this.lights.cameraFlashlight = createCameraFlashlight(this.camera);
 
         // --- Wall Chandeliers ---
-        this.lights.chanRight = new WallChandelier(this.scene, this.loadingManager);
-        this.lights.chanRight.setPosition(4.9, 1.5, 1);
-        this.lights.chanRight.setRotation(-Math.PI / 2);
 
         this.lights.chanLeft = new WallChandelier(this.scene, this.loadingManager);
         this.lights.chanLeft.setPosition(-4.9, 1.5, -1);
@@ -61,11 +62,19 @@ export class MainScene {
         this.lights.door = createDoorLight();
         this.scene.add(this.lights.door);
 
+        // --- Table Lamp ---
+        this.objects.tableLamp = new TableLamp(this.scene, this.loadingManager);
+        this.objects.tableLamp.setPosition(4.22, -0.4, 0.7); 
+
+        // --- Pen ---
+        this.objects.pen = new Pen(this.scene, this.loadingManager);
+        this.objects.pen.setPosition(4.1, -0.38, 1.2); 
+
         // --- Objects ---
         // --- Objects (Deferred Loading) ---
         this.objects.room = new Room(this.scene, this.loadingManager);
         
-        this.objects.cabinet = new Cabinet(this.scene, this.loadingManager);
+        this.objects.cabinet = new Cabinet(this.scene, this.loadingManager, this.world);
         this.objects.cabinet.group.position.z = -3.5;
         this.objects.cabinet.group.updateMatrix();
         this.objects.cabinet.group.matrixAutoUpdate = false;
@@ -87,12 +96,30 @@ export class MainScene {
         this.objects.door.group.matrixAutoUpdate = false;
         
         // --- Paper Note ---
-        this.objects.paper = new Paper("47----", "Mysterious Note");
+        this.objects.paper = new Paper("47---", "Mysterious Note");
         // Mahogany table is at x=4.22, y=-1.7 (base), z=1. Estimated top height is ~0.75m from floor.
         // Floor is at -1.7, so -1.7 + 0.75 = -0.95
         this.objects.paper.setPosition(4.22, -0.4, 1.0); 
         this.objects.paper.setRotation(-Math.PI / 2, 0, -Math.PI / 2); 
         this.scene.add(this.objects.paper.group);
+
+        // --- Metal Platting Above Door ---
+        this.objects.metalPlatting = new MetalPlatting(this.scene, this.loadingManager);
+        this.objects.metalPlatting.setPosition(0, 2.2, 4.97); 
+        this.objects.metalPlatting.setRotation(0, Math.PI, 0);
+
+        // --- Puzzle Box (preloaded, starts inside the bottom drawer) ---
+        this.objects.pBox = new PuzzleBox(this.scene, this.loadingManager);
+        this.objects.cabinet.drawerGroups[0].add(this.objects.pBox.group);
+        this.objects.pBox.setPosition(0.8, -1, -2);
+        this.objects.pBox.group.scale.set(1.2, 1.2, 1.2);
+
+        // --- Flashlight (preloaded, next to the puzzle box) ---
+        this.objects.flashlightObj = new Flashlight(this.loadingManager);
+        this.objects.flashlightObj.group.rotation.y = Math.PI / 2;
+        this.objects.flashlightObj.group.scale.set(1.1, 1.1, 1.1);
+        this.objects.flashlightObj.setPosition(0.3, 0.4, -0.4);
+        this.objects.cabinet.drawerGroups[0].add(this.objects.flashlightObj.group);
 
         // --- Bird Proxy (Deferred) ---
         this.scene.add(this.birdProxy);
@@ -101,25 +128,11 @@ export class MainScene {
     }
 
     /**
-     * Lazy loads items inside the Vault (Drawer 0)
+     * Lazy loads items inside the Vault (Drawer 0) - objects now preloaded, just enable shadows
      */
     loadVaultItems() {
-        if (this.objects.pBox || this.objects.flashlightObj) return;
-
-        console.log("LAZY LOADING VAULT ITEMS...");
-        
-        this.objects.pBox = new PuzzleBox(this.scene, this.loadingManager);
-        this.objects.cabinet.drawerGroups[0].add(this.objects.pBox.group);
-        this.objects.pBox.setPosition(0, -0.9, -0.4);
-        this.objects.pBox.group.scale.set(1.2, 1.2, 1.2);
-
-        this.objects.flashlightObj = new Flashlight(this.loadingManager);
-        this.objects.flashlightObj.group.rotation.y = Math.PI / 2;
-        this.objects.flashlightObj.group.scale.set(1.1, 1.1, 1.1);
-        this.objects.flashlightObj.setPosition(0.3, 0.4, -0.4);
-        this.objects.cabinet.drawerGroups[0].add(this.objects.flashlightObj.group);
-
-        // Re-enable shadows for new objects
+        if (this._vaultShadowsEnabled) return;
+        this._vaultShadowsEnabled = true;
         this.enableShadows(this.objects.cabinet.drawerGroups[0]);
     }
 
@@ -185,11 +198,19 @@ export class MainScene {
                 light.shadow.needsUpdate = true;
             }
         });
+
     }
+
+
 
     enableShadows(obj) {
         obj.traverse(node => {
             if (node.isMesh) {
+                if (node.userData.noShadow) {
+                    node.castShadow = false;
+                    node.receiveShadow = false;
+                    return;
+                }
                  if (node.material && (node.material.opacity === undefined || node.material.opacity > 0)) {
                     const isRoomPart = node.userData.isRoomPart || node.parent?.userData.isRoomPart;
                     const isSmallProp = node.userData.isSmallProp || node.parent?.userData.isSmallProp;
@@ -212,9 +233,12 @@ export class MainScene {
         });
     }
 
-    update() {
-        this.lights.chanRight.update();
+    update(delta) {
         this.lights.chanLeft.update();
         this.lights.chanBack.update();
+        if (this.objects.pBox) {
+            this.objects.pBox.update(delta);
+        }
     }
+
 }

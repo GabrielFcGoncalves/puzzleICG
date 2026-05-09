@@ -19,11 +19,13 @@ export class AnimationSystem {
     }
 
     start() {
+        this.clock = new THREE.Clock();
         this.animate();
     }
 
     animate() {
         requestAnimationFrame(this.animate);
+        const delta = this.clock.getDelta();
         this.stats.update();
 
         if (this.store.ui.isInspecting) {
@@ -37,11 +39,18 @@ export class AnimationSystem {
             this.projScreenMatrix.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
             this.frustum.setFromProjectionMatrix(this.projScreenMatrix);
 
-            this.updateMainScene();
+            this.world.delta = delta;
+            this.updateMainScene(delta);
             this.updateBirdProxy();
 
             this.updatePuzzleBoxMovement();
             this.updateDoorRotation();
+            
+            // --- Physics Update ---
+            if (this.world.physicsSystem) {
+                this.world.physicsSystem.update(delta);
+            }
+
             this.controls.update();
 
 
@@ -57,7 +66,18 @@ export class AnimationSystem {
             this.mainScene.lights.left.shadow.needsUpdate = true;
 
             const time = performance.now();
-            if (time > 5000) {
+            const angel = this.mainScene.objects.room.angel;
+            let isAngelMoving = false;
+            
+            if (this.store.puzzle.isBirdPuzzleSolved && angel) {
+                const targetX = -2.1; 
+                if (Math.abs(angel.position.x - targetX) > 0.01) {
+                    isAngelMoving = true;
+                }
+            }
+
+            // Only freeze if enough time has passed AND no critical animation is running
+            if (time > 5000 && !isAngelMoving) {
                 this.store.ui.shadowNeedsRefresh = false;
                 console.log("SHADOW MAPS BAKED AND FROZEN");
             }
@@ -76,16 +96,18 @@ export class AnimationSystem {
         }
     }
 
-    updateMainScene() {
-        this.mainScene.update();
+    updateMainScene(delta) {
+        this.mainScene.update(delta);
 
         // Optimized: Only update cabinet if it's potentially visible
         const cabinet = this.mainScene.objects.cabinet;
+        if (!cabinet || !cabinet.group) return;
+
         if (!this.cabinetBox) {
             this.cabinetBox = new THREE.Box3().setFromObject(cabinet.group);
         }
         
-        if (this.frustum.intersectsBox(this.cabinetBox)) {
+        if (this.cabinetBox && this.frustum.intersectsBox(this.cabinetBox)) {
             cabinet.update(
                 this.store.ui.isEthereal,
                 this.store.ui.isHintMode,
@@ -106,13 +128,12 @@ export class AnimationSystem {
             // Optimization: If the bird hasn't rotated and it's not solved, we can skip complex logic
             // But we need to check alignment for the 2s timer, so we only skip if solved.
             if (this.store.puzzle.isBirdPuzzleSolved) {
-                birdProxy.visible = true; // Still keep it visible
-                return;
+                birdProxy.visible = true;
+            } else {
+                birdProxy.visible = true;
+                birdProxy.position.set(-4, 1.35, -0.1); 
+                birdProxy.scale.set(0.3, 0.3, 0.3);
             }
-
-            birdProxy.visible = true;
-            birdProxy.position.set(-4, 1.35, -0.1); 
-            birdProxy.scale.set(0.3, 0.3, 0.3);
 
             // --- Alignment Puzzle Logic ---
             if (!this.store.puzzle.isBirdPuzzleSolved) {
@@ -130,7 +151,30 @@ export class AnimationSystem {
 
                     if (duration > 2000) { // 2 Seconds
                         this.store.puzzle.isBirdPuzzleSolved = true;
+                        this.store.ui.shadowNeedsRefresh = true; // Unfreeze shadows for movement
                         this.world.uiManager.setStatus("ALIGNMENT CORRECT - A MECHANISM ACTIVATED");
+                        
+                        // Cinematic: Look at the moving angel
+                        const angel = this.mainScene.objects.room.angel;
+                        if (angel) {
+                            const angelPos = new THREE.Vector3();
+                            angel.getWorldPosition(angelPos);
+                            
+                            // Save current view
+                            const oldCam = this.camera.position.clone();
+                            const oldTarget = this.controls.target.clone();
+                            
+                            // Pan to angel
+                            this.store.zoomTo(angelPos, 5.0, angelPos, new THREE.Vector3(1, 0.5, 1.5));
+                            
+                            // Return after 6 seconds
+                            setTimeout(() => {
+                                this.store.camera.isTransitioning = true;
+                                this.store.camera.cameraFocus.copy(oldCam);
+                                this.store.camera.targetFocus.copy(oldTarget);
+                            }, 6000);
+                        }
+
                         console.log("Bird Puzzle Solved!");
                     }
                 } else {
@@ -144,13 +188,19 @@ export class AnimationSystem {
             birdProxy.visible = false;
         }
 
-        // --- Handle Closet (Shelf) Transition ---
+        // --- Handle Angel Statue Transition ---
         if (this.store.puzzle.isBirdPuzzleSolved) {
-            const shelf = this.mainScene.objects.room.shelf;
-            if (shelf) {
-                const targetX = -1.5; // -3.5 + 2.0 (User manual fix)
-                if (Math.abs(shelf.position.x - targetX) > 0.01) {
-                    shelf.position.x = THREE.MathUtils.lerp(shelf.position.x, targetX, 0.02);
+            const angel = this.mainScene.objects.room.angel;
+            if (angel) {
+                const targetX = -2.1; 
+                const dist = Math.abs(angel.position.x - targetX);
+                if (dist > 0.01) {
+                    angel.position.x = THREE.MathUtils.lerp(angel.position.x, targetX, 0.015);
+                    
+                    // Subtle Screen Shake while moving
+                    const shakeAmount = 0.005;
+                    this.camera.position.x += (Math.random() - 0.5) * shakeAmount;
+                    this.camera.position.y += (Math.random() - 0.5) * shakeAmount;
                 }
             }
         }
@@ -185,7 +235,8 @@ export class AnimationSystem {
             const worldPos = new THREE.Vector3();
             pBox.group.getWorldPosition(worldPos);
             
-            const camOffset = new THREE.Vector3(0, 1.5, 1.2).applyQuaternion(this.mainScene.objects.cabinet.group.quaternion);
+            // Shift camera more to the left (negative X) as it was too far to the right
+            const camOffset = new THREE.Vector3(-0.8, 2.0, 3);
             const targetCamPos = worldPos.clone().add(camOffset);
             
             this.camera.position.lerp(targetCamPos, 0.3);
@@ -201,7 +252,8 @@ export class AnimationSystem {
                 this.store.puzzle.isBoxOnPedestal = true;
                 this.world.uiManager.setStatus("BOX PLACED ON PEDESTAL - READY FOR INSPECTION");
                 
-                this.store.zoomTo(this.store.puzzle.pBoxTargetPos, 2.5, null, new THREE.Vector3(0, 1.5, 0.8));
+                // Zoom to the box at its new location
+                this.store.zoomTo(this.store.puzzle.pBoxTargetPos, 2.2, null, new THREE.Vector3(-1, 2.0, 3));
                 
                 this.controls.minAzimuthAngle = -Infinity;
                 this.controls.maxAzimuthAngle = Infinity;

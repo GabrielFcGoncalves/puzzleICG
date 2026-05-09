@@ -13,6 +13,8 @@ import { AnimationSystem } from '../systems/AnimationSystem.js';
 import { store } from '../store/Store.js';
 import { UIManager } from '../utils/UI.js';
 import { InputSystem } from '../systems/InputSystem.js';
+import { PhysicsSystem } from '../systems/PhysicsSystem.js';
+import * as CANNON from 'cannon-es';
 
 /**
  * World class acts as the central hub for the application.
@@ -34,12 +36,18 @@ export class World {
 
         this.uiManager = new UIManager(this);
         
+        // --- Physics System ---
+        this.physicsSystem = new PhysicsSystem();
+        this.addPhysicsGround();
+        
         // --- Loading Management ---
         const loaderBar = document.getElementById('loader-bar');
         const loaderText = document.getElementById('loader-text');
         const loaderScreen = document.getElementById('loading-screen');
         
         this.loadingManager = new THREE.LoadingManager();
+        this.mainScene = new MainScene(this.camera, this.loadingManager, this);
+
         this.loadingManager.onProgress = (url, itemsLoaded, itemsTotal) => {
             const p = (itemsLoaded / itemsTotal) * 100;
             if (loaderBar) loaderBar.style.width = `${p}%`;
@@ -54,8 +62,7 @@ export class World {
             }, 500);
         };
 
-        // Initialize Scene and Animation System
-        this.mainScene = new MainScene(this.camera, this.loadingManager);
+        // Initialize Animation System and other scenes
         this.inspectionScene = new InspectionScene(this.renderer);
         this.animationSystem = new AnimationSystem(this);
 
@@ -159,5 +166,32 @@ export class World {
             if (child.userData.isItem) items.push(child);
         });
         return items;
+    }
+
+    addPhysicsGround() {
+        const groundBody = new CANNON.Body({
+            mass: 0, // static
+            shape: new CANNON.Plane(),
+            type: CANNON.Body.STATIC
+        });
+        // Rotate to be horizontal
+        groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+        // Position at room floor level (MainScene says room is at -1.7 y)
+        groundBody.position.set(0, -1.7, 0);
+        this.physicsSystem.physicsWorld.addBody(groundBody);
+
+        // Add static body for the cabinet
+        // W=2, H=3, D=1.2. H is total height, cabinet is centered on its local origin usually.
+        // Wait, CabinetBody.js shows box is at y = H/2 - 0.1? No, let's check CabinetBody.js.
+        const cabinetBody = new CANNON.Body({
+            mass: 0,
+            shape: new CANNON.Box(new CANNON.Vec3(1, 1.5, 0.6)), // Half-extents
+            type: CANNON.Body.STATIC
+        });
+        // MainScene: cabinet at z=-3.5. Floor at -1.7. 
+        // If H=3, bottom of body is at -1.5. Feet are at -1.6.
+        // If feet at -1.6 touch floor at -1.7, local origin is at -0.1 world Y.
+        cabinetBody.position.set(0, -0.1, -3.5);
+        this.physicsSystem.physicsWorld.addBody(cabinetBody);
     }
 }

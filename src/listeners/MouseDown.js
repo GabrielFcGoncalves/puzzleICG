@@ -6,6 +6,7 @@ import { FootRotationHandler } from './mousedown/FootRotationHandler.js';
 import { DrawerDragHandler } from './mousedown/DrawerDragHandler.js';
 import { BirdRotationHandler } from './mousedown/BirdRotationHandler.js';
 import { DoorDragHandler } from './mousedown/DoorDragHandler.js';
+import { PuzzleBoxButtonHandler } from './mousedown/PuzzleBoxButtonHandler.js';
 
 // ============================================================================
 // HANDLER REGISTRY
@@ -16,6 +17,7 @@ import { DoorDragHandler } from './mousedown/DoorDragHandler.js';
  * Most specific handlers first to prevent false matches.
  */
 const MOUSEDOWN_HANDLERS = [
+    new PuzzleBoxButtonHandler(),
     new FlashlightSwitchHandler(),
     new PadlockButtonHandler(),
     new PadlockWheelHandler(),
@@ -25,6 +27,7 @@ const MOUSEDOWN_HANDLERS = [
     new BirdRotationHandler(),
     new DoorDragHandler(),
 ];
+
 
 // ============================================================================
 // RAYCAST COLLECTION
@@ -39,10 +42,10 @@ function collectRaycastResults(ctx) {
 
     return {
         allHits: raycaster.intersectObjects(ctx.scene.children, true),
-        wheelHits: raycaster.intersectObjects(cabinet.wheels, true),
-        handleHits: raycaster.intersectObjects(ctx.getHandles(), true),
-        keyHits: raycaster.intersectObjects([cabinet.keyPivot], true),
-        footHits: raycaster.intersectObjects(cabinet.feet || [], true),
+        wheelHits: raycaster.intersectObjects(cabinet.wheels.filter(Boolean), true),
+        handleHits: raycaster.intersectObjects(ctx.getHandles().filter(Boolean), true),
+        keyHits: raycaster.intersectObjects([cabinet.keyPivot].filter(Boolean), true),
+        footHits: raycaster.intersectObjects((cabinet.feet || []).filter(Boolean), true),
         birdHits: puzzle.showBirdInFocus && ctx.birdProxy
             ? raycaster.intersectObject(ctx.birdProxy, true)
             : [],

@@ -6,7 +6,7 @@ import * as THREE from 'three';
 export function createDoorLight() {
     const doorLight = new THREE.PointLight(0xffddaa, 12, 10);
     doorLight.position.set(0, 2, 3.8); // Adjust based on door position
-    doorLight.castShadow = true;
+    doorLight.castShadow = false;
     
     // Shadow settings
     doorLight.shadow.bias = -0.002;

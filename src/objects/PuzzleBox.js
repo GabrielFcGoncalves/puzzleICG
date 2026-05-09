@@ -1,76 +1,120 @@
 import * as THREE from 'three';
+import { ModelLoader } from '../utils/ModelLoader.js';
 
 export class PuzzleBox {
-    constructor(scene) {
+    constructor(scene, loadingManager) {
         this.scene = scene;
+        this.loadingManager = loadingManager;
+        this.modelLoader = new ModelLoader(this.loadingManager);
         this.group = new THREE.Group();
+        this.mixer = null;
+        this.actions = {};
+
+        // Mark as puzzle part immediately so interactions are ready
+        this.group.userData = { isPuzzleBox: true, isStaticPuzzlePart: true, isSmallProp: true };
+
         this.init();
     }
 
-    init() {
-        const material = new THREE.MeshStandardMaterial({ 
-            color: 0x2b1d0e, // Very Dark Wood
-            roughness: 0.9,
-            metalness: 0.02
-        });
+    async init() {
+        const path = new URL('../models/Object.glb', import.meta.url).href;
+        try {
+            const gltf = await this.modelLoader.load(path);
+            const model = gltf.scene;
 
-        // --- Big Pentagonal Frustum ---
-        // CylinderGeometry(radiusTop, radiusBottom, height, radialSegments)
-        const frustumHeight = 0.6;
-        const frustumGeom = new THREE.CylinderGeometry(0.3, 0.4, frustumHeight, 5);
-        const frustum = new THREE.Mesh(frustumGeom, material);
-        frustum.position.y = frustumHeight / 2;
-        this.group.add(frustum);
+            // Setup animations
+            // Mixer root MUST be gltf.scene (model), not a wrapper Group.
+            // PropertyBinding resolves node names starting from this root.
+            if (gltf.animations && gltf.animations.length > 0) {
+                console.log('PuzzleBox animations:', gltf.animations.map(a => a.name));
+                this.mixer = new THREE.AnimationMixer(model);
+                gltf.animations.forEach(clip => {
+                    // Pass model explicitly so bindings resolve inside the correct subtree
+                    this.actions[clip.name] = this.mixer.clipAction(clip, model);
+                });
+            }
 
-        // --- Smaller Pyramid on Top ---
-        const pyramidHeight = 0.3;
-        const pyramidGeom = new THREE.CylinderGeometry(0, 0.3, pyramidHeight, 5);
-        const pyramid = new THREE.Mesh(pyramidGeom, material);
-        pyramid.position.y = frustumHeight + pyramidHeight / 2;
-        this.group.add(pyramid);
+            // Compute bounding box to anchor the model at its base
+            const box = new THREE.Box3().setFromObject(model);
+            const center = new THREE.Vector3();
+            const size = new THREE.Vector3();
+            box.getCenter(center);
+            box.getSize(size);
 
-        // Mark as puzzle part
-        this.group.userData = { isPuzzleBox: true, isStaticPuzzlePart: true, isSmallProp: true };
+            // Place pivot at base: center X/Z, but set Y so bottom is at y=0
+            model.position.x -= center.x;
+            model.position.z -= center.z;
+            model.position.y -= box.min.y; // Lift so bottom sits at y=0
 
-        // --- Darker Wood Stripes (Edges) ---
-        const stripeMat = new THREE.MeshStandardMaterial({ 
-            color: 0x120a05, 
-            roughness: 1.0 
-        });
+            // Scale to fit roughly the same footprint as the old box (~0.8 units tall)
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const targetSize = 0.8;
+            const scale = targetSize / maxDim;
+            model.scale.setScalar(scale);
 
-        const createStripe = (p1, p2) => {
-            const distance = p1.distanceTo(p2);
-            const geom = new THREE.CylinderGeometry(0.015, 0.015, distance, 5);
-            const mesh = new THREE.Mesh(geom, stripeMat);
-            
-            const center = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
-            mesh.position.copy(center);
-            
-            const dir = new THREE.Vector3().subVectors(p2, p1).normalize();
-            mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
-            
-            this.group.add(mesh);
-        };
+            model.traverse(n => {
+                if (n.isMesh) {
+                    console.log(`PuzzleBox Mesh: ${n.name}`);
+                    n.castShadow = true;
+                    n.receiveShadow = true;
+                    n.userData.isPuzzleBox = true;
+                    n.userData.isStaticPuzzlePart = true;
+                    
+                    // Specific check for the cube to make it uniquely clickable if needed
+                    if (n.name.toLowerCase().includes('cube') || n.name.toLowerCase().includes('button')) {
+                        console.log(`MATCHED BUTTON: ${n.name}`);
+                        n.userData.isPushButton = true;
+                    }
+                }
+            });
 
-        const r0 = 0.402, r1 = 0.302, h1 = 0.6, h2 = 0.9;
-        const p0 = [], p1 = [], p2 = new THREE.Vector3(0, h2, 0);
-
-        for (let i = 0; i <= 5; i++) {
-            const theta = (i / 5) * Math.PI * 2;
-            // Three.js Cylinder uses (sin, cos) for vertices
-            p0.push(new THREE.Vector3(Math.sin(theta) * r0, 0, Math.cos(theta) * r0));
-            p1.push(new THREE.Vector3(Math.sin(theta) * r1, h1, Math.cos(theta) * r1));
-        }
-
-        for (let i = 0; i < 5; i++) {
-            createStripe(p0[i], p0[i + 1]);       // Bottom
-            createStripe(p1[i], p1[i + 1]);       // Middle
-            createStripe(p0[i], p1[i]);           // Segments
-            createStripe(p1[i], p2);              // Top
+            this.group.add(model);
+        } catch (error) {
+            console.error('Error loading PuzzleBox model:', error);
         }
     }
+
+    playPressedButton() {
+        const action = this.actions['PressButton'];
+        if (action) {
+            console.log('Playing PressButton animation...');
+            action.reset();
+            action.setLoop(THREE.LoopOnce);
+            action.clampWhenFinished = true;
+            action.play();
+
+            // Sequence the next animation to start after the button press is over
+            const onFinished = (e) => {
+                if (e.action === action) {
+                    this.mixer.removeEventListener('finished', onFinished);
+                    
+                    const openside = this.actions['OpenSide5'];
+                    if (openside) {
+                        console.log('Button press finished, playing OpenSide5');
+                        openside.reset();
+                        openside.setLoop(THREE.LoopOnce);
+                        openside.clampWhenFinished = true;
+                        openside.play();
+                    }
+                }
+            };
+
+            this.mixer.addEventListener('finished', onFinished);
+        } else {
+            console.warn('No PressButton animation found. Available:', Object.keys(this.actions));
+        }
+    }
+
+
 
     setPosition(x, y, z) {
         this.group.position.set(x, y, z);
     }
+
+    update(delta) {
+        if (this.mixer) {
+            this.mixer.update(delta);
+        }
+    }
 }
+

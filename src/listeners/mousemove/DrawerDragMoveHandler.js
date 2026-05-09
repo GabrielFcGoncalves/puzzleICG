@@ -12,7 +12,7 @@ export class DrawerDragMoveHandler extends MouseMoveHandler {
     handle(ctx) {
         const { interaction, cabinet, raycaster, intersectionPoint, offset } = ctx;
         const dGroup = cabinet.drawerGroups[interaction.draggedDrawerIndex];
-        const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), dGroup.position.y);
+        const groundPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), dGroup.position);
 
         if (raycaster.ray.intersectPlane(groundPlane, intersectionPoint)) {
             const zMin = dGroup.userData.restZ;

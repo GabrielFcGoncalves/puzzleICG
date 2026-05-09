@@ -33,7 +33,7 @@ export class DrawerDragHandler extends MouseDownHandler {
         renderer.domElement.classList.add('grabbing');
 
         // Calculate grab offset (where on the drawer did we click?)
-        const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), drawer.position.y);
+        const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), drawer.position);
         const point = new THREE.Vector3();
 
         if (raycaster.ray.intersectPlane(plane, point)) {

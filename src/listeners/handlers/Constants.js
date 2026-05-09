@@ -13,6 +13,18 @@ export const CAMERA_PRESETS = {
         zoomLevel: 1.5,
         offset: new THREE.Vector3(0, 0.4, 0.8)
     },
+    bottomDrawer: {
+        azimuth: [-Math.PI / 6, Math.PI / 6],
+        polar: [Math.PI * 0.3, Math.PI * 0.55], // Looking more from above
+        zoomLevel: 2.2,
+        offset: new THREE.Vector3(0, 0.8, 1.0) // Higher up
+    },
+    drawerInside: {
+        azimuth: [-Math.PI / 3, Math.PI / 3],
+        polar: [Math.PI * 0.25, Math.PI * 0.5],
+        zoomLevel: 1.4,
+        offset: new THREE.Vector3(0, 2.4, -1)
+    },
     foot: {
         azimuth: [-Math.PI, Math.PI],
         polar: [Math.PI * 0.4, Math.PI * 0.75],
@@ -42,6 +54,12 @@ export const CAMERA_PRESETS = {
         polar: [0, Math.PI * 0.75],
         zoomLevel: 3.6,
         offset: new THREE.Vector3(0, 1.2, -1.8)
+    },
+    pedestal: {
+        azimuth: [-Infinity, Infinity],
+        polar: [0, Math.PI * 0.75],
+        zoomLevel: 1.8,
+        offset: new THREE.Vector3(-0.5, 0.5, 0.8)
     }
 };
 
@@ -54,5 +72,6 @@ export const INTERACTION_RANGES = {
 export const INTERACTIVE_FLAGS = [
     'isItem', 'isPuzzleBox', 'isStaticPuzzlePart',
     'isRotatable', 'isFooting', 'isFlashlightSwitch', 'isCabinetBody',
-    'isPadlock', 'isPadlockWheel', 'isPadlockButton'
+    'isPadlock', 'isPadlockWheel', 'isPadlockButton', 'isPushButton'
 ];
+

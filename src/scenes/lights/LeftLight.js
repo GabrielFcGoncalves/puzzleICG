@@ -3,7 +3,7 @@ import * as THREE from 'three';
 export function createLeftLight() {
     const leftLight = new THREE.PointLight(0xffaa55, 15, 8);
     leftLight.position.set(-4, 1.8, -1);
-    leftLight.castShadow = true;
+    leftLight.castShadow = false;
     leftLight.shadow.autoUpdate = false; // Static shadow map
     leftLight.shadow.bias = -0.0001;
     leftLight.shadow.normalBias = 0.02;

@@ -15,7 +15,8 @@ export class PadlockButtonHandler extends MouseDownHandler {
         for (const hit of allHits) {
             const buttonObj = findAncestorWithFlag(hit.object, 'isPadlockButton');
             if (buttonObj) {
-                this.buttonObj = buttonObj;
+                // If we hit the hitbox mesh, the actual logical button is its parent bone
+                this.buttonObj = buttonObj.userData.isButtonMesh ? buttonObj.parent : buttonObj;
                 return true;
             }
         }
@@ -25,7 +26,7 @@ export class PadlockButtonHandler extends MouseDownHandler {
     handle(ctx) {
         this.buttonObj.userData.isPressed = true;
 
-        if (ctx.cabinet.checkPuzzle()) {
+        if (ctx.cabinet.checkPuzzle(ctx)) {
             ctx.statusElement.innerText = "STATUS: UNLOCKED (Grab handle)";
         }
     }

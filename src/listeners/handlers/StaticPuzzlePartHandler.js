@@ -39,10 +39,20 @@ export class StaticPuzzlePartHandler extends DoubleClickHandler {
             ctx.zoomTo(worldPos, 0.8, null, new THREE.Vector3(0, 0.2, 0.6));
             return;
         }
+        if (target.userData.isMetalPlatting) {
+            ctx.zoomTo(worldPos, 0.5, worldPos, new THREE.Vector3(0, 0.2, 0.6));
+            return;
+        }
         if (target.userData.isPaper) {
             // High-precision zoom for reading paper
             const lookAt = worldPos.clone();
             ctx.zoomTo(worldPos, 0.7, lookAt, new THREE.Vector3(-1, 1, 0));
+            return;
+        }
+        if (target.userData.isSmallTable) {
+            // Zoom to the table surface
+            const surfacePos = worldPos.clone().add(new THREE.Vector3(0, 1.3, 0)); 
+            ctx.zoomTo(surfacePos, 1.2, surfacePos, new THREE.Vector3(-1.2, 0.8, 0));
             return;
         }
 

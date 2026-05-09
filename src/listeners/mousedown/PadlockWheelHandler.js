@@ -20,6 +20,11 @@ export class PadlockWheelHandler extends MouseDownHandler {
         const { cabinet, controls } = ctx;
 
         const wheelIndex = getWheelIndex(this.wheelObj);
+        if (wheelIndex === undefined || wheelIndex >= cabinet.currentCode.length) {
+            console.warn(`Invalid wheel index: ${wheelIndex}`);
+            return;
+        }
+
         cabinet.currentCode[wheelIndex] = (cabinet.currentCode[wheelIndex] + 1) % 10;
         cabinet.wheels[wheelIndex].userData.targetRot += (Math.PI * 2) / 10;
         controls.enabled = false;

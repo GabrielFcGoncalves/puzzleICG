@@ -17,8 +17,8 @@ export class FurnitureSystem {
     async init() {
         const woodMat = new THREE.MeshStandardMaterial({ color: 0x2b1d0e });
 
-        // Bookshelf
-        this.createShelf(woodMat);
+        // Bookshelf -> Angel Statue
+        this.createAngelStatue();
 
         // Models
         try {
@@ -28,7 +28,11 @@ export class FurnitureSystem {
             tableModel.position.set(this.size / 2 - 0.78, -1.7, 1);
             tableModel.rotation.y = -Math.PI / 2;
             tableModel.scale.set(0.2, 0.2, 0.2); 
-            tableModel.userData.isFurniture = true;
+            tableModel.userData = {
+                isFurniture: true,
+                isStaticPuzzlePart: true,
+                isSmallTable: true
+            };
             this.furnitureGroup.add(tableModel);
 
             const carpetPath = new URL('../../models/fine_persian_heriz_carpet/scene.gltf', import.meta.url).href;
@@ -66,20 +70,34 @@ export class FurnitureSystem {
         }
     }
 
-    createShelf(woodMat) {
-        const shelf = new THREE.Group();
-        const frame = new THREE.Mesh(new THREE.BoxGeometry(1.5, 4.5, 0.5), woodMat);
-        shelf.add(frame);
-        for (let i = 0; i < 6; i++) {
-            const shelf_row = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.05, 0.45), woodMat);
-            shelf_row.position.y = -2 + i * 0.7;
-            shelf_row.position.z = 0.02;
-            shelf.add(shelf_row);
+    async createAngelStatue() {
+        const angelPath = new URL('../../models/angel_statue/scene.gltf', import.meta.url).href;
+        try {
+            const gltf = await this.modelLoader.load(angelPath);
+            const angel = gltf.scene;
+            
+            // Positioning where the shelf used to be (more to the left)
+            angel.position.set(-4.2, 1.25, -this.size / 2 + 0.35);
+            angel.scale.set(3, 3, 3);
+            
+            angel.traverse(n => {
+                if (n.isMesh) {
+                    n.castShadow = true;
+                    n.receiveShadow = true;
+                }
+            });
+
+            angel.userData = {
+                isFurniture: true,
+                isStaticPuzzlePart: true,
+                isAngelStatue: true
+            };
+            
+            this.parent.angel = angel;
+            this.furnitureGroup.add(angel);
+        } catch (error) {
+            console.error('Error loading angel statue:', error);
         }
-        shelf.position.set(-3.5, 4.5 / 2 - 1.7, -this.size / 2 + 0.28);
-        shelf.userData.isFurniture = true;
-        this.parent.shelf = shelf;
-        this.furnitureGroup.add(shelf);
     }
 
     async createPosts() {

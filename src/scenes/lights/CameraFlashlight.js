@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 export function createCameraFlashlight(camera) {
     const flashlight = new THREE.SpotLight(0xffd488, 5, 8, Math.PI / 6, 0.5, 2);
-    flashlight.castShadow = true; 
+    flashlight.castShadow = false; 
     flashlight.shadow.mapSize.width = 512;
     flashlight.shadow.mapSize.height = 512;
     flashlight.shadow.bias = -0.0001;

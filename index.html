@@ -13,7 +13,7 @@
 <body>
     <div id="loading-screen">
         <div class="loader-content">
-            <h1>INITIATING WORLD...</h1>
+            <h1> Loading...</h1>
             <div id="loader-bar-container">
                 <div id="loader-bar"></div>
             </div>
@@ -43,7 +43,13 @@
     </div>
 
     <script type="importmap">
-        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
+        { 
+            "imports": { 
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js", 
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+                "cannon-es": "https://unpkg.com/cannon-es@0.20.0/dist/cannon-es.js"
+            } 
+        }
     </script>
 
     <script type="module" src="src/main.js"></script>
