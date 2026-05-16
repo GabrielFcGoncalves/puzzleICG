@@ -30,6 +30,13 @@ const HOVER_HANDLER = new HoverCursorHandler();
 export function handleMouseMove(event, ctx) {
     ctx.event = event;
 
+    // Delegate to InspectionScene if active
+    if (ctx.uiState.isInspecting) {
+        if (ctx.inspectionScene.handleMouseMove(event)) {
+            return;
+        }
+    }
+
     const { mouse, raycaster, camera } = ctx;
 
     // Update raycast from mouse position

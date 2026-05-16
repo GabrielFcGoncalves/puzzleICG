@@ -100,20 +100,15 @@ export class WallSystem {
         ceiling.userData.isRoomPart = true;
         this.ceilingGroup.add(ceiling);
 
-        // Walls
-        const wallGeom = new THREE.PlaneGeometry(this.size, this.height);
-        wallGeom.setAttribute('uv2', wallGeom.attributes.uv.clone());
-
-        // Back wall
-        const backWall = new THREE.Mesh(wallGeom, wallMat);
-        backWall.position.set(0, this.height / 2 - 1.7, -this.size / 2);
-        backWall.userData.isRoomPart = true;
-        this.wallsGroup.add(backWall);
+        // Back wall (with secret hole behind angel statue)
+        this.createBackWall(wallMat);
 
         // Front wall segments (with door hole)
         this.createFrontWall(wallMat);
 
         // Left wall
+        const wallGeom = new THREE.PlaneGeometry(this.size, this.height);
+        wallGeom.setAttribute('uv2', wallGeom.attributes.uv.clone());
         const leftWall = new THREE.Mesh(wallGeom, wallMat);
         leftWall.position.set(-this.size / 2, this.height / 2 - 1.7, 0);
         leftWall.rotation.y = Math.PI / 2;
@@ -135,7 +130,99 @@ export class WallSystem {
         });
     }
 
+    // The angel statue sits at world x=-4.2, z=-4.65 (against the back wall at z=-5).
+    // We carve a rectangular hole in the back wall at that x position.
+    createBackWall(wallMat) {
+        const wallZ    = -this.size / 2;    // z = -5
+        const wallW    = this.size;          // 10
+        const wallH    = this.height;        // 6
+        const wallLeft  = -this.size / 2;   // -5
+        const wallRight =  this.size / 2;   // +5
+        const floorY    = -1.7;
+
+        // Hole parameters — centered on the angel (x=-4.2), starts at floor level
+        const holeX  = -4.2;
+        const holeW  =  1.4;
+        const holeH  =  2.4;  // tall enough to walk through (conceptually)
+
+        const holeLeft  = holeX - holeW / 2;
+        const holeRight = holeX + holeW / 2;
+        const holeBottom = floorY + 0.3; // Raised by 0.3 units
+        const holeTop    = holeBottom + holeH;
+
+        const wallTop    = floorY + wallH;
+        const wallCenterY = floorY + wallH / 2;
+
+        // Helper: add a rectangular wall segment defined by world-space x/y bounds
+        const addSegment = (x0, x1, y0, y1) => {
+            const w = x1 - x0;
+            const h = y1 - y0;
+            if (w <= 0.001 || h <= 0.001) return;
+
+            const geom = new THREE.PlaneGeometry(w, h);
+            const uvAttr = geom.attributes.uv;
+            for (let i = 0; i < uvAttr.count; i++) {
+                const u = ((x0 - wallLeft) + uvAttr.getX(i) * w) / wallW;
+                const v = ((y0 - floorY)   + uvAttr.getY(i) * h) / wallH;
+                uvAttr.setXY(i, u, v);
+            }
+            const mesh = new THREE.Mesh(geom, wallMat);
+            mesh.position.set((x0 + x1) / 2, (y0 + y1) / 2, wallZ);
+            mesh.userData.isRoomPart = true;
+            this.wallsGroup.add(mesh);
+        };
+
+        // 1. Left slab  (full height, left of hole)
+        addSegment(wallLeft,  holeLeft,  floorY, wallTop);
+
+        // 2. Right slab (full height, right of hole)
+        addSegment(holeRight, wallRight, floorY, wallTop);
+
+        // 3. Top band above hole (between hole sides, above the opening)
+        addSegment(holeLeft, holeRight, holeTop, wallTop);
+
+        // 4. Bottom band below hole
+        addSegment(holeLeft, holeRight, floorY, holeBottom);
+
+        // Void recess — 5 planes (back + 4 sides), front face omitted so the hole is open
+        const voidDepth = 1.2;
+        const holeCenterY = (holeBottom + holeTop) / 2;
+        const backZ = wallZ - voidDepth;
+
+        const addVoidFace = (geom, rx, ry, x, y, z, isBack = false) => {
+            const mesh = new THREE.Mesh(geom, wallMat);
+            mesh.rotation.x = rx;
+            mesh.rotation.y = ry;
+            mesh.position.set(x, y, z);
+            mesh.userData.isRoomPart = true;
+            mesh.userData.isStaticPuzzlePart = true;
+            if (isBack) {
+                mesh.userData.isWallHole = true;
+            } else {
+                mesh.userData.isWallHoleInterior = true;
+            }
+            this.wallsGroup.add(mesh);
+        };
+
+        // Back face (faces +z towards room) — clickable zoom target
+        addVoidFace(new THREE.PlaneGeometry(holeW, holeH), 0, 0, holeX, holeCenterY, backZ, true);
+
+
+        // Floor (faces +y upward)
+        addVoidFace(new THREE.PlaneGeometry(holeW, voidDepth), Math.PI / 2, 0, holeX, holeBottom, wallZ - voidDepth / 2);
+
+        // Ceiling (faces -y downward)
+        addVoidFace(new THREE.PlaneGeometry(holeW, voidDepth), -Math.PI / 2, 0, holeX, holeTop, wallZ - voidDepth / 2);
+
+        // Left side (faces +x rightward, towards room interior)
+        addVoidFace(new THREE.PlaneGeometry(voidDepth, holeH), 0, -Math.PI / 2, holeLeft, holeCenterY, wallZ - voidDepth / 2);
+
+        // Right side (faces -x leftward, towards room interior)
+        addVoidFace(new THREE.PlaneGeometry(voidDepth, holeH), 0, Math.PI / 2, holeRight, holeCenterY, wallZ - voidDepth / 2);
+    }
+
     createFrontWall(wallMat) {
+
         const doorWidth = 1.6;
         const doorHeight = 3.5;
         const wallZ = this.size / 2;
@@ -202,23 +289,49 @@ export class WallSystem {
 
     createTrim() {
         const trimMat = new THREE.MeshStandardMaterial({ color: 0x1a0f05 });
-        const trimGeom = new THREE.BoxGeometry(this.size, 0.4, 0.05);
+        const trimH   = 0.4;
+        const trimD   = 0.05;
+        const trimY   = 0.2 - 1.7;
+        const backZ   = -this.size / 2 + 0.03;
 
-        const trimBack = new THREE.Mesh(trimGeom, trimMat);
-        trimBack.position.set(0, 0.2 - 1.7, -this.size / 2 + 0.03);
-        trimBack.userData.isRoomPart = true;
-        this.wallsGroup.add(trimBack);
+        // Back wall trim — split around the hole opening (holeX=-4.2, holeW=1.4)
+        // Hole spans x=-4.9 to x=-3.5 in world space
+        const holeLeft  = -4.9;
+        const holeRight = -3.5;
+        const wallLeft  = -this.size / 2;  // -5
+        const wallRight =  this.size / 2;  //  +5
+
+        // Left piece: wallLeft to holeLeft
+        const leftW = holeLeft - wallLeft;
+        if (leftW > 0) {
+            const trimBackLeft = new THREE.Mesh(new THREE.BoxGeometry(leftW, trimH, trimD), trimMat);
+            trimBackLeft.position.set(wallLeft + leftW / 2, trimY, backZ);
+            trimBackLeft.userData.isRoomPart = true;
+            this.wallsGroup.add(trimBackLeft);
+        }
+
+        // Right piece: holeRight to wallRight
+        const rightW = wallRight - holeRight;
+        if (rightW > 0) {
+            const trimBackRight = new THREE.Mesh(new THREE.BoxGeometry(rightW, trimH, trimD), trimMat);
+            trimBackRight.position.set(holeRight + rightW / 2, trimY, backZ);
+            trimBackRight.userData.isRoomPart = true;
+            this.wallsGroup.add(trimBackRight);
+        }
+
+        const trimGeom = new THREE.BoxGeometry(this.size, trimH, trimD);
 
         const trimLeft = new THREE.Mesh(trimGeom, trimMat);
         trimLeft.rotation.y = Math.PI / 2;
-        trimLeft.position.set(-this.size / 2 + 0.03, 0.2 - 1.7, 0);
+        trimLeft.position.set(-this.size / 2 + 0.03, trimY, 0);
         trimLeft.userData.isRoomPart = true;
         this.wallsGroup.add(trimLeft);
 
         const trimRight = new THREE.Mesh(trimGeom, trimMat);
         trimRight.rotation.y = -Math.PI / 2;
-        trimRight.position.set(this.size / 2 - 0.03, 0.2 - 1.7, 0);
+        trimRight.position.set(this.size / 2 - 0.03, trimY, 0);
         trimRight.userData.isRoomPart = true;
         this.wallsGroup.add(trimRight);
     }
 }
+

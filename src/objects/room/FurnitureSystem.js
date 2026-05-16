@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 import { BirdItem } from '../BirdItem.js';
+import { Paper } from '../Paper.js';
+import { TreasureChestItem } from '../TreasureChestItem.js';
+
 
 export class FurnitureSystem {
     constructor(parent, size) {
@@ -19,6 +22,9 @@ export class FurnitureSystem {
 
         // Bookshelf -> Angel Statue
         this.createAngelStatue();
+
+        // Wall hole content (treasure chest + clue paper)
+        this.createWallHoleContent();
 
         // Models
         try {
@@ -69,6 +75,34 @@ export class FurnitureSystem {
             console.error('Error loading furniture models:', error);
         }
     }
+
+    async createWallHoleContent() {
+        // The hole is at x=-4.2, back wall z=-5, depth=1.2 → backZ=-6.2
+        const holeX   = -4.2;
+        const backWallZ = -5;
+        const voidDepth = 1.2;
+        const backZ   = backWallZ - voidDepth;  // -6.2
+        const floorY  = -1.7 + 0.3; // Raised to match WallSystem
+
+        // Treasure chest as a pickable Item
+        const chest = new TreasureChestItem(this.loadingManager);
+        // Sit on the floor of the recess, centered, facing the room
+        chest.setPosition(holeX, floorY, backWallZ - voidDepth / 2);
+        chest.group.rotation.y = Math.PI;
+        chest.group.userData.isWallHoleInterior = true;
+        this.furnitureGroup.add(chest.group);
+
+        // Paper pinned flat on the back wall of the recess, facing into the room
+        const paper = new Paper('--18-', 'Torn Note');
+        // Position just in front of the back wall face, centred in the hole
+        paper.setPosition(holeX - 0.2, floorY + 0.5, backZ + 0.01);
+
+        // Facing +z (towards the room) — no x rotation needed since default plane faces +z
+        paper.setRotation(0, 0, 0);
+        paper.group.userData.isWallHoleInterior = true;
+        this.furnitureGroup.add(paper.group);
+    }
+
 
     async createAngelStatue() {
         const angelPath = new URL('../../models/angel_statue/scene.gltf', import.meta.url).href;

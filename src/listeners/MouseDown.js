@@ -7,6 +7,7 @@ import { DrawerDragHandler } from './mousedown/DrawerDragHandler.js';
 import { BirdRotationHandler } from './mousedown/BirdRotationHandler.js';
 import { DoorDragHandler } from './mousedown/DoorDragHandler.js';
 import { PuzzleBoxButtonHandler } from './mousedown/PuzzleBoxButtonHandler.js';
+import { WeightPlateDragHandler } from './mousedown/WeightPlateDragHandler.js';
 
 // ============================================================================
 // HANDLER REGISTRY
@@ -17,6 +18,7 @@ import { PuzzleBoxButtonHandler } from './mousedown/PuzzleBoxButtonHandler.js';
  * Most specific handlers first to prevent false matches.
  */
 const MOUSEDOWN_HANDLERS = [
+    new WeightPlateDragHandler(),
     new PuzzleBoxButtonHandler(),
     new FlashlightSwitchHandler(),
     new PadlockButtonHandler(),
@@ -58,6 +60,13 @@ function collectRaycastResults(ctx) {
 
 export function handleMouseDown(event, ctx) {
     ctx.event = event;
+
+    // Delegate to InspectionScene if active
+    if (ctx.uiState.isInspecting) {
+        if (ctx.inspectionScene.handleMouseDown(event)) {
+            return;
+        }
+    }
 
     const { mouse, raycaster, camera } = ctx;
 

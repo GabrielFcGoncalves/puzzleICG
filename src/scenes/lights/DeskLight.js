@@ -6,7 +6,7 @@ export function createDeskLight(scene) {
     deskLight.target.position.set(0, -1, -1.5); 
     scene.add(deskLight.target);
     deskLight.castShadow = true;
-    deskLight.shadow.autoUpdate = false; 
+    deskLight.shadow.autoUpdate = true;
     deskLight.shadow.bias = -0.0001;
     deskLight.shadow.normalBias = 0.02;
     deskLight.shadow.mapSize.width = 512;

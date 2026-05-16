@@ -13,8 +13,14 @@ export class ItemHandler extends DoubleClickHandler {
             return;
         }
 
+        // Find the group that holds the item instance (it might be a child mesh that was clicked)
+        let itemGroup = target;
+        while (itemGroup && !itemGroup.userData.itemInstance) {
+            itemGroup = itemGroup.parent;
+        }
+
         if (this.isWithinRange(worldPos, controls.target, INTERACTION_RANGES.pickup)) {
-            ctx.pickupItem(target);
+            ctx.pickupItem(itemGroup || target);
         } else if (target.userData.isZoomable !== false) {
             cameraState.isZoomedOnFoot = false;
             ctx.zoomTo(worldPos, 1.0);

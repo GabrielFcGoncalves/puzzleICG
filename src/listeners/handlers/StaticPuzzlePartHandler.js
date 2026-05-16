@@ -55,6 +55,17 @@ export class StaticPuzzlePartHandler extends DoubleClickHandler {
             ctx.zoomTo(surfacePos, 1.2, surfacePos, new THREE.Vector3(-1.2, 0.8, 0));
             return;
         }
+        if (target.userData.isWallHole || target.userData.isWallHoleInterior) {
+            // Zoom into the recess behind the angel statue — camera moves in front of hole
+            const holeCenter = new THREE.Vector3(-4.2, -0.2, -4.65);
+            ctx.zoomTo(holeCenter, 1.2, holeCenter, new THREE.Vector3(0, 0, 1.5));
+
+            ctx.controls.minAzimuthAngle = -Math.PI / 6;
+            ctx.controls.maxAzimuthAngle =  Math.PI / 6;
+            ctx.controls.minPolarAngle = Math.PI * 0.35;
+            ctx.controls.maxPolarAngle = Math.PI * 0.65;
+            return;
+        }
 
         // Default: generic zoom
         worldPos.add(new THREE.Vector3(0, 2, 0));

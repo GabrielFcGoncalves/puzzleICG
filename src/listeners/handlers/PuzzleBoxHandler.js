@@ -17,6 +17,25 @@ export class PuzzleBoxHandler extends DoubleClickHandler {
 
 
         if (puzzle.isBoxOnPedestal) {
+            const puzzleBox = target.userData.puzzleBoxInstance;
+            
+            // If we clicked on any part of the scale, zoom to show both plates!
+            if (target.userData.isScalePlate || target.name.includes('Scale') || target.name.includes('Plate')) {
+                if (puzzleBox && puzzleBox.plates[1] && puzzleBox.plates[2]) {
+                    const p1 = new THREE.Vector3();
+                    const p2 = new THREE.Vector3();
+                    puzzleBox.plates[1].getWorldPosition(p1);
+                    puzzleBox.plates[2].getWorldPosition(p2);
+                    
+                    // Midpoint between the two plates
+                    const midPoint = p1.clone().add(p2).multiplyScalar(0.5);
+                    
+                    // Zoom to midPoint with a wider view to see both plates!
+                    ctx.zoomTo(midPoint, 0.8, midPoint, new THREE.Vector3(0, 0.4, 0.8));
+                    return;
+                }
+            }
+
             // Target the center of the box for orbital rotation, not the click point
             const boxWorldPos = new THREE.Vector3();
             target.getWorldPosition(boxWorldPos);
@@ -28,7 +47,7 @@ export class PuzzleBoxHandler extends DoubleClickHandler {
             scene.attach(puzzleBox.group);
             puzzle.isMovingPuzzleBox = true;
             ctx.cameraState.isTransitioning = false;
-            puzzle.pBoxTargetPos.copy(new THREE.Vector3(1, 0.02, -1.2));
+            puzzle.pBoxTargetPos.copy(new THREE.Vector3(1.85, -1, -1.6));
         }
     }
 

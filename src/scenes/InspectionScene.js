@@ -21,6 +21,11 @@ export class InspectionScene {
         const iFillLight = new THREE.DirectionalLight(0xffffff, 2.5);
         iFillLight.position.set(-2, -2, 2);
         this.scene.add(iFillLight);
+
+        this.raycaster = new THREE.Raycaster();
+        this.mouse = new THREE.Vector2();
+        this.draggedPart = null;
+        this.dragOffset = 0;
     }
 
     open(itemData) {
@@ -62,6 +67,65 @@ export class InspectionScene {
         this.controls.update();
 
         this.scene.add(this.currentInspectedGroup);
+    }
+
+    handleMouseDown(event) {
+        this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        this.raycaster.setFromCamera(this.mouse, this.camera);
+
+        const hits = this.raycaster.intersectObjects(this.scene.children, true);
+        if (hits.length > 0) {
+            let obj = hits[0].object;
+            console.log("Clicked Inspection Part:", obj.name, obj.userData);
+            
+            // Check if it's an interactive part
+            while (obj && obj !== this.scene) {
+                if (obj.userData.isTreasureLock) {
+                    this.draggedPart = obj;
+                    this.controls.enabled = false; // Disable orbit controls during drag
+                    this.startY = event.clientY;
+                    this.startRotationX = obj.rotation.x;
+                    return true;
+                }
+                obj = obj.parent;
+            }
+        }
+        return false;
+    }
+
+    handleMouseMove(event) {
+        if (!this.draggedPart) return false;
+
+        const deltaY = event.clientY - this.startY;
+        // Map deltaY to rotation (dragging up rotates it out/up)
+        const sensitivity = 0.01;
+        
+        if (this.draggedPart.userData.isTreasureLock) {
+            let newRot = this.startRotationX + deltaY * sensitivity;
+            
+            // Clamp rotation
+            const minRot = Math.min(this.draggedPart.userData.restRotationX, this.draggedPart.userData.openedRotationX);
+            const maxRot = Math.max(this.draggedPart.userData.restRotationX, this.draggedPart.userData.openedRotationX);
+            
+            newRot = Math.max(minRot, Math.min(maxRot, newRot));
+            this.draggedPart.rotation.x = newRot;
+
+            // Check if opened enough to trigger state
+            const progress = (newRot - this.draggedPart.userData.restRotationX) / (this.draggedPart.userData.openedRotationX - this.draggedPart.userData.restRotationX);
+            this.draggedPart.userData.isOpen = progress > 0.8;
+        }
+
+        return true;
+    }
+
+    handleMouseUp() {
+        if (this.draggedPart) {
+            this.draggedPart = null;
+            this.controls.enabled = true;
+            return true;
+        }
+        return false;
     }
 
     update() {

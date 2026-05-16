@@ -17,6 +17,7 @@ import { TableLamp } from '../objects/TableLamp.js';
 import { Pen } from '../objects/Pen.js';
 import { MetalPlatting } from '../objects/MetalPlatting.js';
 import { ModelLoader } from '../utils/ModelLoader.js';
+import { MetalWeight } from '../objects/MetalWeight.js';
 
 export class MainScene {
     constructor(camera, loadingManager, world) {
@@ -111,8 +112,8 @@ export class MainScene {
         // --- Puzzle Box (preloaded, starts inside the bottom drawer) ---
         this.objects.pBox = new PuzzleBox(this.scene, this.loadingManager);
         this.objects.cabinet.drawerGroups[0].add(this.objects.pBox.group);
-        this.objects.pBox.setPosition(0.8, -1, -2);
-        this.objects.pBox.group.scale.set(1.2, 1.2, 1.2);
+        this.objects.pBox.setPosition(1.2, -2.3, -2.31);
+        this.objects.pBox.group.scale.set(1.75, 1.75, 1.75);
 
         // --- Flashlight (preloaded, next to the puzzle box) ---
         this.objects.flashlightObj = new Flashlight(this.loadingManager);
@@ -120,6 +121,32 @@ export class MainScene {
         this.objects.flashlightObj.group.scale.set(1.1, 1.1, 1.1);
         this.objects.flashlightObj.setPosition(0.3, 0.4, -0.4);
         this.objects.cabinet.drawerGroups[0].add(this.objects.flashlightObj.group);
+
+        // --- Metal Weights ---
+        // 1. Two on the small table
+        const weight1 = new MetalWeight(100);
+        weight1.setPosition(4.1, -0.4, 0.9);
+        this.scene.add(weight1.group);
+
+        const weight2 = new MetalWeight(50);
+        weight2.setPosition(4.3, -0.4, 1.1);
+        this.scene.add(weight2.group);
+
+        // 2. One on the puzzle box scale (added as child so it moves with it)
+        const weight3 = new MetalWeight(200);
+        weight3.setPosition(-0.55, 0.74, 1.08); // On top of the box
+        weight3.group.scale.setScalar(1 / 1.75); // Counteract parent scale
+        this.objects.pBox.group.add(weight3.group);
+
+        // 3. One behind the statue
+        const weight4 = new MetalWeight(500);
+        weight4.setPosition(-4.2, -1.7, -4.9);
+        this.scene.add(weight4.group);
+
+        // 4. One below the pedestal in the middle of the room
+        const weight5 = new MetalWeight(20);
+        weight5.setPosition(0, -1.7, 0.5); // Near the base of the center table
+        this.scene.add(weight5.group);
 
         // --- Bird Proxy (Deferred) ---
         this.scene.add(this.birdProxy);
