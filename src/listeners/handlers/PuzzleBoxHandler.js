@@ -22,16 +22,19 @@ export class PuzzleBoxHandler extends DoubleClickHandler {
             // If we clicked on any part of the scale, zoom to show both plates!
             if (target.userData.isScalePlate || target.name.includes('Scale') || target.name.includes('Plate')) {
                 if (puzzleBox && puzzleBox.plates[1] && puzzleBox.plates[2]) {
+                    const box1 = new THREE.Box3().setFromObject(puzzleBox.plates[1]);
+                    const box2 = new THREE.Box3().setFromObject(puzzleBox.plates[2]);
                     const p1 = new THREE.Vector3();
                     const p2 = new THREE.Vector3();
-                    puzzleBox.plates[1].getWorldPosition(p1);
-                    puzzleBox.plates[2].getWorldPosition(p2);
+                    box1.getCenter(p1);
+                    box2.getCenter(p2);
                     
                     // Midpoint between the two plates
                     const midPoint = p1.clone().add(p2).multiplyScalar(0.5);
                     
                     // Zoom to midPoint with a wider view to see both plates!
-                    ctx.zoomTo(midPoint, 0.8, midPoint, new THREE.Vector3(0, 0.4, 0.8));
+                    // Increased offset to (0, 0.6, 1.2) to pull back and show both plates clearly.
+                    ctx.zoomTo(midPoint, 0.8, midPoint, new THREE.Vector3(0, 0.6, 1.2));
                     return;
                 }
             }

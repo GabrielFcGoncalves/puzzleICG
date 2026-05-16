@@ -18,6 +18,7 @@ export class PuzzleBox {
         this.originalPlateY = { 1: 0, 2: 0 };
         this.targetPlateYOffset = 0;
         this.scaleAnimationsFinished = false;
+        this.isSolved = false;
 
         // Mark as puzzle part immediately so interactions are ready
         this.group.userData = { isPuzzleBox: true, isStaticPuzzlePart: true, isSmallProp: true };
@@ -114,9 +115,6 @@ export class PuzzleBox {
 
             this.group.add(model);
             
-            // Add a starting weight of 200g to Plate 1
-            const startWeight = new MetalWeight(200);
-            this.addWeightToPlate(1, startWeight);
             
         } catch (error) {
             console.error('Error loading PuzzleBox model:', error);
@@ -157,6 +155,10 @@ export class PuzzleBox {
                                 if (this.plates[2]) this.originalPlateY[2] = this.plates[2].position.y;
                                 this.scaleAnimationsFinished = true;
                                 console.log("Scale animations finished. Captured plate heights:", this.originalPlateY);
+                                
+                                // Spawn the starting weight on the scale now!
+                                const startWeight = new MetalWeight(130);
+                                this.addWeightToPlate(1, startWeight);
                             }, 50); // Small timeout to ensure matrix updates are fully settled
                         }
                     };
@@ -213,14 +215,7 @@ export class PuzzleBox {
         weightItem.group.userData.onPlateId = plateId;
         weightItem.group.userData.puzzleBox = this;
         
-        if (this.plateWeights[1] > 0 && this.plateWeights[1] === this.plateWeights[2]) {
-            console.log("SCALE BALANCED!");
-            // This is where you would trigger the next puzzle step
-            if (globalThis.document) {
-                const status = globalThis.document.getElementById('status-text');
-                if (status) status.innerText = "STATUS: SCALE BALANCED!";
-            }
-        }
+
     }
 
     removeWeightFromPlate(plateId, weightItem) {
@@ -239,8 +234,20 @@ export class PuzzleBox {
     updateScaleBalance() {
         const diff = this.plateWeights[2] - this.plateWeights[1]; // Plate 2 - Plate 1
         // Make it proportional to weight difference. Let's say 100g = 0.015 units of movement.
-        const factor = 0.00015; 
+        const factor = 0.01; 
         this.targetPlateYOffset = diff * factor;
+
+        if (!this.isSolved && this.plateWeights[1] > 0 && this.plateWeights[1] === this.plateWeights[2]) {
+            console.log("SCALE BALANCED!");
+            this.isSolved = true;
+            this.playAnimation('OpenSide2');
+            this.playAnimation('Board appear');
+            
+            if (globalThis.document) {
+                const status = globalThis.document.getElementById('status-text');
+                if (status) status.innerText = "STATUS: SCALE BALANCED! BOX OPENING!";
+            }
+        }
     }
 
     update(delta) {

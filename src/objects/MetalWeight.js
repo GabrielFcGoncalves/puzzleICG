@@ -14,7 +14,8 @@ export class MetalWeight extends Item {
 
     createMesh() {
         // Base scale factors based on weight type (grams)
-        let scale = 0.2;
+        // Dimensions scale with the cube root of the mass (assuming constant density)
+        let scale = 0.2 * Math.pow(this.weightType / 100, 1/3);
 
         const points = [];
         

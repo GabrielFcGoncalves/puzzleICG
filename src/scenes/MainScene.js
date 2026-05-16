@@ -123,13 +123,13 @@ export class MainScene {
         this.objects.cabinet.drawerGroups[0].add(this.objects.flashlightObj.group);
 
         // --- Metal Weights ---
-        // 1. Two on the small table
+        // 1. Two on the small table (moved more to the right/forward by Z)
         const weight1 = new MetalWeight(100);
-        weight1.setPosition(4.1, -0.4, 0.9);
+        weight1.setPosition(4.1, -0.4, 1.9);
         this.scene.add(weight1.group);
 
         const weight2 = new MetalWeight(50);
-        weight2.setPosition(4.3, -0.4, 1.1);
+        weight2.setPosition(4.3, -0.4, 2.1);
         this.scene.add(weight2.group);
 
         // 2. One on the puzzle box scale (added as child so it moves with it)
