@@ -8,7 +8,7 @@ export class DecorationSystem {
         this.loadingManager = parent.loadingManager;
     }
 
-    init() {
+    async init() {
         const textureLoader = new THREE.TextureLoader(this.loadingManager);
         const frameMat = new THREE.MeshStandardMaterial({ color: 0xaa8800, metalness: 0.8, roughness: 0.2 });
         const paintMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
@@ -53,8 +53,21 @@ export class DecorationSystem {
         // Bird Painting
         this.wallsGroup.add(createPainting(1.5, 2, -this.size / 2 + 0.03, 1.2, 0, Math.PI / 2, '../../models/paintings/bird_silhouette.png', true));
 
-        // Back Painting
-        this.wallsGroup.add(createPainting(1.5, 2, 2, 1.2, -this.size / 2 + 0.03, 0));
+        // Back Painting (Replaced with right_painting model)
+        const path = new URL('../../models/right_painting/scene.gltf', import.meta.url).href;
+        try {
+            const gltf = await this.parent.modelLoader.load(path);
+            const painting = gltf.scene;
+            painting.position.set(3, 1.2, -this.size / 2 + 0.03);
+            painting.rotation.y = Math.PI/2 ;
+            painting.scale.set(0.007, 0.007, 0.007);
+            
+            painting.userData = { isStaticPuzzlePart: true, isPainting: true, isFurniture: true };
+            
+            this.wallsGroup.add(painting);
+        } catch (error) {
+            console.error('Error loading right_painting:', error);
+        }
     }
 
     update(isBirdPuzzleSolved) {

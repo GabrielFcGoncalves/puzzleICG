@@ -302,7 +302,7 @@ export class InputSystem {
         // Stand Drop Logic (Flashlight)
         if (target.userData.isStand && itemData.name === 'Old Flashlight') {
             const f = new Flashlight(this.world.loadingManager);
-            f.setPosition(-1.1, 1.05, 0); 
+            f.setPosition(-1.1, 0.95, 0); 
             f.group.scale.set(1.2, 1.2, 1.2);
             f.group.rotation.y = -Math.PI/2;
             f.group.rotation.z = Math.PI/14;

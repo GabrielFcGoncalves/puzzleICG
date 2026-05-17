@@ -2,7 +2,6 @@ export function handleContextMenu(event, ctx) {
     event.preventDefault();
     if (ctx.uiState.isInspecting) {
         ctx.closeInspection();
-    } else {
-        ctx.resetZoom();
     }
+    ctx.resetZoom();
 }

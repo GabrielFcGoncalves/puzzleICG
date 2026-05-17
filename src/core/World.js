@@ -25,16 +25,13 @@ export class World {
         this.store = store;
         this.renderer = createRenderer();
         this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-        this.camera.position.set(3, 2, 4);
+        this.camera.position.set(3, 2, 3.5);
 
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.controls.enablePan = false;
         this.controls.maxPolarAngle = Math.PI * 0.6;
         this.controls.target.set(0, 1.0, 0);
         this.controls.update();
-
-        this.stats = new Stats();
-        document.body.appendChild(this.stats.dom);
 
         this.uiManager = new UIManager(this);
         
@@ -43,26 +40,57 @@ export class World {
         this.addPhysicsGround();
         
         // --- Loading Management ---
-        const loaderBar = document.getElementById('loader-bar');
-        const loaderText = document.getElementById('loader-text');
         const loaderScreen = document.getElementById('loading-screen');
+        const subtleLoader = document.getElementById('subtle-loader');
         
         this.loadingManager = new THREE.LoadingManager();
         this.mainScene = new MainScene(this.camera, this.loadingManager, this);
 
+        let loadingComplete = false;
+        let presentationComplete = false;
+
+        const checkFinish = () => {
+            if (loadingComplete && presentationComplete) {
+                setTimeout(() => {
+                    if (loaderScreen) loaderScreen.classList.add('loading-finished');
+                }, 1000);
+            }
+        };
+
         this.loadingManager.onProgress = (url, itemsLoaded, itemsTotal) => {
             const p = (itemsLoaded / itemsTotal) * 100;
-            if (loaderBar) loaderBar.style.width = `${p}%`;
-            if (loaderText) loaderText.innerText = `${Math.round(p)}% - LOADING ${url.split('/').pop()}`;
+            if (subtleLoader) subtleLoader.innerText = `Loading... ${Math.round(p)}%`;
         };
+
         this.loadingManager.onLoad = () => {
             // Trigger a final shadow refresh once everything is loaded
             this.mainScene.refreshShadows();
-            
-            setTimeout(() => {
-                if (loaderScreen) loaderScreen.classList.add('loading-finished');
-            }, 500);
+            loadingComplete = true;
+            checkFinish();
         };
+
+        // Presentation sequence
+        const playPresentation = async () => {
+            const texts = [
+                document.getElementById('text-1'),
+                document.getElementById('text-2'),
+                document.getElementById('text-3'),
+                document.getElementById('text-4')
+            ];
+
+            const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+            for (let i = 0; i < texts.length; i++) {
+                await delay(1500); // Wait before showing next text
+                if (texts[i]) texts[i].classList.add('visible');
+            }
+
+            await delay(3000); // Wait after last text
+            presentationComplete = true;
+            checkFinish();
+        };
+
+        playPresentation();
 
         // Initialize Animation System and other scenes
         this.inspectionScene = new InspectionScene(this.renderer);

@@ -39,7 +39,7 @@ export function createNoteTexture() {
     return new THREE.CanvasTexture(canvas);
 }
 
-export function createClueTexture() {
+export function createClueTexture(text = '4-7-1-8-5') {
     const canvas = document.createElement('canvas');
     canvas.width = 512; canvas.height = 256;
     const ctx = canvas.getContext('2d');
@@ -51,7 +51,7 @@ export function createClueTexture() {
     // Add a glowing effect
     ctx.shadowColor = '#00ffff';
     ctx.shadowBlur = 15;
-    ctx.fillText('1-2-3-4', 256, 128);
+    ctx.fillText(text, 256, 128);
     return new THREE.CanvasTexture(canvas);
 }
 
@@ -154,4 +154,50 @@ export function createPaperTexture(text) {
     const tex = new THREE.CanvasTexture(canvas);
     tex.anisotropy = 16;
     return tex;
+}
+
+export function createLaserClueTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+    
+    ctx.clearRect(0, 0, 256, 256);
+    
+    ctx.strokeStyle = '#00ffff';
+    ctx.lineWidth = 3;
+    ctx.shadowColor = '#00ffff';
+    ctx.shadowBlur = 10;
+    
+    ctx.beginPath();
+    const pCrystal = { x: 50, y: 50 };
+    const pM1 = { x: 200, y: 50 };
+    const pM2 = { x: 50, y: 200 };
+    const pM3 = { x: 200, y: 200 };
+    
+    ctx.moveTo(pCrystal.x, pCrystal.y);
+    ctx.lineTo(pM1.x, pM1.y);
+    ctx.lineTo(pM2.x, pM2.y);
+    ctx.lineTo(pM3.x, pM3.y);
+    ctx.lineTo(pCrystal.x, pCrystal.y);
+    ctx.stroke();
+    
+    ctx.fillStyle = '#00ffff';
+    const drawNode = (p, label, offsetX = -15) => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        
+        ctx.fillStyle = '#00ffff';
+        ctx.font = 'bold 16px Courier';
+        ctx.fillText(label, p.x + offsetX, p.y - 12);
+    };
+    
+    drawNode(pCrystal, 'Purple Crystal', -45);
+    drawNode(pM1, 'M1');
+    drawNode(pM2, 'M2');
+    drawNode(pM3, 'M3');
+    
+    return new THREE.CanvasTexture(canvas);
 }

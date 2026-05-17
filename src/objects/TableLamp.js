@@ -24,11 +24,21 @@ export class TableLamp {
             
             this.group.add(lampModel);
             
-            // Add a simpler point light inside the lamp (no shadows)
+            // Add a point light inside the lamp that casts shadows
             this.light = new THREE.PointLight(0xffaa44, 10, 4);
             this.light.position.set(0, 0.8, 0); 
-            this.light.castShadow = false;
+            this.light.castShadow = true;
+            this.light.shadow.mapSize.width = 512;
+            this.light.shadow.mapSize.height = 512;
+            this.light.shadow.bias = -0.001;
             this.group.add(this.light);
+
+            // Disable shadow casting for the lamp model meshes so light can escape
+            lampModel.traverse(node => {
+                if (node.isMesh) {
+                    node.castShadow = false;
+                }
+            });
 
         } catch (error) {
             console.error('Error loading table lamp model:', error);

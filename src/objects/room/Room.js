@@ -42,7 +42,7 @@ export class Room {
         await this.furniture.init();
 
         this.decorations = new DecorationSystem(this, this.size);
-        this.decorations.init();
+        await this.decorations.init();
 
         this.secret = new SecretSystem(this, this.size, this.height);
         this.secret.init(this.walls.wallMat);

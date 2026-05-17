@@ -208,8 +208,7 @@ export class PuzzleBox {
                 }
             }
             
-            // Create paper note with instructions
-            this.createPaperNote();
+            // Paper note removed in favor of texture in cabinet
         } catch (error) {
             console.error('Error loading PuzzleBox model:', error);
         }

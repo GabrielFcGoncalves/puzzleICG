@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createWheelTexture, createClueTexture, createFingerprintTexture } from '../../utils/Textures.js';
+import { createWheelTexture, createClueTexture, createFingerprintTexture, createLaserClueTexture } from '../../utils/Textures.js';
 import { CabinetBody } from './CabinetBody.js';
 import { DrawerSystem } from './DrawerSystem.js';
 import { LockSystem } from './LockSystem.js';
@@ -51,7 +51,7 @@ export class Cabinet {
 
         // --- Textures ---
         this.wheelSideTex = createWheelTexture();
-        this.clueTex = createClueTexture();
+        this.clueTex = createLaserClueTexture();
         this.fingerprintTex = createFingerprintTexture();
 
         // --- Sub-Systems ---
@@ -63,13 +63,12 @@ export class Cabinet {
 
         this.lockSystem = new LockSystem(this);
 
-        // --- Clue plane (back of cabinet) ---
+        // --- Clue plane (inside top of cabinet) ---
         this.cluePlane = new THREE.Mesh(
             new THREE.PlaneGeometry(1.4, 0.7),
             new THREE.MeshBasicMaterial({ map: this.clueTex, transparent: true, opacity: 0 })
         );
-        this.cluePlane.position.set(0, 0, -(D / 2 + 0.01));
-        this.cluePlane.rotation.y = Math.PI;
+        this.cluePlane.position.set(0, 1.1, -(D / 2 - 0.05)); // Inside the top compartment
         this.group.add(this.cluePlane);
 
         this.scene.add(this.group);

@@ -31,8 +31,7 @@ export class AnimationSystem {
     animate() {
         requestAnimationFrame(this.animate);
         const delta = this.clock.getDelta();
-        this.stats.update();
-
+        
         if (this.store.ui.isInspecting) {
             this.inspectionScene.update();
             this.inspectionScene.render(this.renderer);
@@ -289,28 +288,56 @@ export class AnimationSystem {
     }
 
     checkCameraCollision() {
+        // Disable collision during transitions, padlock view, or when manually disabled
+        if (this.store.camera.camClampingDisabled || 
+            this.store.camera.isZoomedOnPadlock || 
+            this.store.puzzle.isMovingPuzzleBox || 
+            this.store.camera.isTransitioning) {
+            
+            this.previousCameraPosition.copy(this.camera.position);
+            return;
+        }
+
         const camPos = this.camera.position;
         const moveDir = camPos.clone().sub(this.previousCameraPosition);
         const moveLength = moveDir.length();
         
+        // Fix 4: If the movement is microscopic, don't waste math on it
         if (moveLength < 0.001) return;
         
         moveDir.normalize();
         
         const raycaster = new THREE.Raycaster();
         raycaster.set(this.previousCameraPosition, moveDir);
-        raycaster.far = moveLength;
+        // Fix 4: Add a tiny buffer to the ray length to catch walls early
+        raycaster.far = moveLength + 0.05;
         
         const collidables = this.getCollidableObjects();
         const intersects = raycaster.intersectObjects(collidables, true);
         
         if (intersects.length > 0) {
             // Collision detected along the movement path!
-            this.camera.position.copy(this.previousCameraPosition);
-            this.camera.updateMatrixWorld();
+            const hit = intersects[0];
+            const hitPoint = hit.point;
             
-            this.collisionDetected = true;
-            console.log("Collision detected! Reverting to previous position.");
+            // Get normal in world space
+            const hitNormal = hit.face.normal.clone();
+            hitNormal.transformDirection(hit.object.matrixWorld);
+            
+            // Fix 3: Only apply safe point override if moving into the face
+            if (moveDir.dot(hitNormal) < 0) {
+                const cameraRadius = 0.2; // Keep a small distance from wall
+                const safePoint = hitPoint.clone().add(hitNormal.multiplyScalar(cameraRadius));
+                
+                // Placing it at the safe point stops it at the wall instead of bouncing back
+                this.camera.position.copy(safePoint);
+                this.camera.updateMatrixWorld();
+                
+                this.collisionDetected = true;
+                console.log("Collision detected! Placing camera at safe point.");
+            } else {
+                this.collisionDetected = false;
+            }
         } else {
             this.collisionDetected = false;
         }

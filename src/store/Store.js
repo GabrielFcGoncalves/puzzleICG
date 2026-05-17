@@ -65,7 +65,7 @@ export class GameStore {
     resetZoom() {
         this.camera.isTransitioning = true;
         this.camera.targetFocus.set(0, 0, 0);
-        this.camera.cameraFocus.set(3, 2, 4);
+        this.camera.cameraFocus.set(3, 2, 3.5);
         this.camera.isZoomedOnFoot = false;
         this.camera.isZoomedOnPadlock = false;
         this.camera.camClampingDisabled = false;

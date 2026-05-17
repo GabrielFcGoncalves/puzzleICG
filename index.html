@@ -12,33 +12,16 @@
 
 <body>
     <div id="loading-screen">
-        <div class="loader-content">
-            <h1> Loading...</h1>
-            <div id="loader-bar-container">
-                <div id="loader-bar"></div>
-            </div>
-            <p id="loader-text">0% - LOADING MODELS</p>
+        <div class="presentation-container">
+            <div class="story-text" id="text-1">You are stuck in a room</div>
+            <div class="story-text" id="text-2">you dont know how you came in</div>
+            <div class="story-text" id="text-3">but you need to get out</div>
+            <div class="story-text" id="text-4">find the 3 gem stones and open the door</div>
         </div>
+        <div id="subtle-loader">Loading... 0%</div>
     </div>
 
-    <div id="ui">
-        <h2>OBJECT: THE BRASS CABINET</h2>
-        <div id="status">STATUS: LOCKED</div>
-        <div id="instructions">Press SPACE to toggle hidden view</div>
-    </div>
 
-    <!-- Debug Menu to skip stages -->
-    <div id="debug-menu" style="position: fixed; top: 20px; right: 20px; z-index: 3000; background: rgba(0,0,0,0.8); padding: 10px; border-radius: 5px; color: #00ffff; font-family: monospace; border: 1px solid #00ffff;">
-        <label for="puzzle-stage">Skip Stage: </label>
-        <select id="puzzle-stage" style="background: #222; color: #00ffff; border: 1px solid #00ffff; padding: 5px; cursor: pointer;">
-            <option value="0">Select Stage...</option>
-            <option value="1">1. Move to Pedestal</option>
-            <option value="2">2. Open Scale</option>
-            <option value="3">3. Solve Scale (Balance)</option>
-            <option value="4">4. Solve Simon Game</option>
-            <option value="5">5. Solve Laser Puzzle</option>
-        </select>
-    </div>
 
     <div id="inventory">
         <div class="slot"></div>

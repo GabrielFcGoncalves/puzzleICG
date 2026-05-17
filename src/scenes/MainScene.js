@@ -152,7 +152,7 @@ export class MainScene {
 
         // 4. One below the pedestal in the middle of the room
         const weight5 = new MetalWeight(20);
-        weight5.setPosition(0.8, -1.7, 0.5); // Near the base of the center table
+        weight5.setPosition(0.8, -1.68, 0.5); // Near the base of the center table
         this.scene.add(weight5.group);
 
         // --- Red Gem ---
@@ -170,9 +170,15 @@ export class MainScene {
         this.scene.add(this.birdProxy);
 
         // --- Hint Arrow ---
-        const arrowDir = new THREE.Vector3(0, 0, -1);
-        const arrowOrigin = new THREE.Vector3(0, -1.69, -2.5);
-        this.objects.hintArrow = new THREE.ArrowHelper(arrowDir, arrowOrigin, 0.5, 0x00ff00, 0.15, 0.1);
+        const arrowOrigin = new THREE.Vector3(1.5, -1.69, -3.5); // On the right side of the cabinet
+        const arrowTarget = new THREE.Vector3(1, -1.69, -4.1); // Special foot of cabinet
+        const arrowDir = arrowTarget.clone().sub(arrowOrigin).normalize();
+        this.objects.hintArrow = new THREE.ArrowHelper(arrowDir, arrowOrigin, 0.5, 0x00ffff, 0.15, 0.1);
+        
+        // Disable raycasting on the arrow so it doesn't block interactions
+        this.objects.hintArrow.line.raycast = function() {};
+        this.objects.hintArrow.cone.raycast = function() {};
+        
         this.scene.add(this.objects.hintArrow);
 
         this.enableShadows(this.scene);

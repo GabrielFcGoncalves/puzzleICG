@@ -40,7 +40,7 @@ export class StaticPuzzlePartHandler extends DoubleClickHandler {
             return;
         }
         if (target.userData.isMetalPlatting) {
-            ctx.zoomTo(worldPos, 0.5, worldPos, new THREE.Vector3(0, 0.2, 0.6));
+            ctx.zoomTo(worldPos, 0.5, worldPos, new THREE.Vector3(0, 0.2, -0.6));
             return;
         }
         if (target.userData.isPaper) {
