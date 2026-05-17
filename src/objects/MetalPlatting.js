@@ -35,10 +35,76 @@ export class MetalPlatting {
             metalness: 0
         });
 
+        // Create canvas for subtle indicators
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 256;
+        const ctx = canvas.getContext('2d');
+        
+        ctx.fillStyle = '#111111';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.lineWidth = 4;
+        
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const offset = (0.35 / 1.3) * canvas.width; // Map 0.35 spacing to canvas
+        
+        // Helper function to draw a diamond
+        const drawDiamond = (x, y, size) => {
+            ctx.beginPath();
+            ctx.moveTo(x, y - size);
+            ctx.lineTo(x + size, y);
+            ctx.lineTo(x, y + size);
+            ctx.lineTo(x - size, y);
+            ctx.closePath();
+            ctx.stroke();
+        };
+        
+        // Helper function to draw a teardrop
+        const drawTeardrop = (x, y, size) => {
+            ctx.beginPath();
+            ctx.moveTo(x, y - size);
+            ctx.quadraticCurveTo(x + size, y, x, y + size);
+            ctx.quadraticCurveTo(x - size, y, x, y + size);
+            ctx.closePath();
+            ctx.stroke();
+        };
+        
+        // Helper function to draw an emerald cut (octagon)
+        const drawEmerald = (x, y, size) => {
+            const inset = size * 0.4;
+            ctx.beginPath();
+            ctx.moveTo(x - size + inset, y - size);
+            ctx.lineTo(x + size - inset, y - size);
+            ctx.lineTo(x + size, y - size + inset);
+            ctx.lineTo(x + size, y + size - inset);
+            ctx.lineTo(x + size - inset, y + size);
+            ctx.lineTo(x - size + inset, y + size);
+            ctx.lineTo(x - size, y + size - inset);
+            ctx.lineTo(x - size, y - size + inset);
+            ctx.closePath();
+            ctx.stroke();
+        };
+        
+        // Draw symbols at mapped positions with corresponding colors
+        ctx.strokeStyle = 'rgba(255, 0, 0, 0.4)'; // Red
+        drawDiamond(centerX - offset, centerY, 40);
+        
+        ctx.strokeStyle = 'rgba(0, 0, 255, 0.4)'; // Blue
+        drawTeardrop(centerX, centerY, 40);
+        
+        ctx.strokeStyle = 'rgba(0, 255, 0, 0.4)'; // Green
+        drawEmerald(centerX + offset, centerY, 40);
+        
+        const symbolTexture = new THREE.CanvasTexture(canvas);
+
         const darkMetalMat = new THREE.MeshStandardMaterial({
-            color: 0x111111,
-            metalness: 1,
-            roughness: 0.2
+            color: 0x555555, // Brighter base to see texture better
+            map: symbolTexture,
+            metalness: 0.5,
+            roughness: 0.5
         });
 
         // The back plate (interior of the holes)
@@ -75,74 +141,25 @@ export class MetalPlatting {
         stonePlate.position.z = -0.05; // Recess it back slightly
         this.group.add(stonePlate);
 
-        // Gemstone settings and gems
+        // Ornamental Slots
+        const gemColors = [0xff0000, 0x0000ff, 0x00ff00]; // Red, Blue, Green
 
-        // Load stylized gemstones
-        const gemPath = new URL('../models/low_poly_stylized_gemstones/scene.gltf', import.meta.url).href;
-        try {
-            const gltf = await this.modelLoader.load(gemPath);
-            const gemModels = gltf.scene;
-
-            // Pick 3 different shapes
-            const shapes = ['Gemstone_01_0', 'Gemstone_02_5', 'Gemstone_03_10'];
-            const gemColors = [0xff0000, 0x0000ff, 0x00ff00]; // Red, Blue, Green
-            const spacing = 0.35;
-
-            gemColors.forEach((color, i) => {
-                const x = (i - 1) * spacing;
-                
-                // Ornamental Slot - Color coordinated
-                const ringMat = new THREE.MeshStandardMaterial({ 
-                    color: color, 
-                    emissive: color,
-                    emissiveIntensity: 0.2,
-                    metalness: 1, 
-                    roughness: 0.1 
-                });
-                const ring = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.02, 12, 32), ringMat);
-                ring.position.set(x, 0, 0.04);
-                this.group.add(ring);
-
-                // Gemstone from model
-                const originalGem = gemModels.getObjectByName(shapes[i]);
-                if (originalGem) {
-                    const gem = originalGem.clone();
-                    
-                    // Individual scaling to fit the circular holes
-                    let s = 0.2;
-                    if (shapes[i] === 'Gemstone_02_5') s = 0.12; // Blue teardrop is long
-                    if (shapes[i] === 'Gemstone_03_10') s = 0.15; // Green emerald is wide
-                    
-                    gem.scale.set(s, s, s);
-                    gem.position.set(x, 0, 0.05);
-                    
-                    // Center adjustment for teardrop
-                    if (shapes[i] === 'Gemstone_02_5') gem.position.y += 0.02;
-
-                    gem.rotation.set(Math.PI / 2, 0, 0);
-
-                    // Material override
-                    gem.traverse(n => {
-                        if (n.isMesh) {
-                            n.material = new THREE.MeshStandardMaterial({
-                                color: color,
-                                emissive: color,
-                                emissiveIntensity: 0.4,
-                                transparent: true,
-                                opacity: 0.9,
-                                metalness: 0.8,
-                                roughness: 0.1
-                            });
-                            n.userData = { isGemstone: true, gemColor: i };
-                        }
-                    });
-                    
-                    this.group.add(gem);
-                }
+        gemColors.forEach((color, i) => {
+            const x = (i - 1) * spacing;
+            
+            // Ornamental Slot - Color coordinated
+            const ringMat = new THREE.MeshStandardMaterial({ 
+                color: color, 
+                emissive: color,
+                emissiveIntensity: 0.2,
+                metalness: 1, 
+                roughness: 0.1 
             });
-        } catch (error) {
-            console.error('Error loading gemstones:', error);
-        }
+            const ring = new THREE.Mesh(new THREE.TorusGeometry(0.07, 0.015, 12, 32), ringMat);
+            ring.position.set(x, 0, 0.04);
+            ring.userData = { isGemSlot: true, colorIndex: i, color: color };
+            this.group.add(ring);
+        });
 
         this.group.userData = { isStaticPuzzlePart: true, isMetalPlatting: true };
         this.scene.add(this.group);

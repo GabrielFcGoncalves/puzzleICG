@@ -11,6 +11,7 @@ export class GameStore {
         this.camera = new CameraState();
         this.puzzle = new PuzzleState();
         this.ui = new UIState();
+        this.placedGems = 0;
 
         // References to objects that will be set during initialization
         this.cameraRef = null;
@@ -33,12 +34,15 @@ export class GameStore {
     pickupItem = async (itemGroup) => {
         const item = itemGroup.userData.itemInstance;
         const name = item.name || 'Unknown Item';
+        console.log(`Picked up: ${name}`);
         const thumbnail = await item.getThumbnail();
 
         this.ui.inventory.push({ name, thumbnail, instance: item });
 
         // Remove from the scene
-        if (itemGroup.parent) {
+        if (item.group && item.group.parent) {
+            item.group.parent.remove(item.group);
+        } else if (itemGroup.parent) {
             itemGroup.parent.remove(itemGroup);
         }
 
@@ -47,8 +51,6 @@ export class GameStore {
             this.uiManager.updateInventory(this.ui.inventory);
             this.uiManager.setStatus(`Picked up: ${name.toUpperCase()}`);
         }
-
-        this.resetZoom();
     }
 
     zoomTo(targetPos, zoomLevel = 1.5, lookAtPos = null, camOffset = new THREE.Vector3(0, 0.8, 1)) {

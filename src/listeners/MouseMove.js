@@ -4,6 +4,7 @@ import { DrawerDragMoveHandler } from './mousemove/DrawerDragMoveHandler.js';
 import { BirdRotationMoveHandler } from './mousemove/BirdRotationMoveHandler.js';
 import { HoverCursorHandler } from './mousemove/HoverCursorHandler.js';
 import { DoorDragMoveHandler } from './mousemove/DoorDragMoveHandler.js';
+import { MirrorRotationMoveHandler } from './mousemove/MirrorRotationMoveHandler.js';
 
 // ============================================================================
 // HANDLER REGISTRY
@@ -19,6 +20,7 @@ const DRAG_HANDLERS = [
     new DrawerDragMoveHandler(),
     new BirdRotationMoveHandler(),
     new DoorDragMoveHandler(),
+    new MirrorRotationMoveHandler(),
 ];
 
 const HOVER_HANDLER = new HoverCursorHandler();

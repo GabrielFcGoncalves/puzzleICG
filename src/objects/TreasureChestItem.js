@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { ModelLoader } from '../utils/ModelLoader.js';
 import { Item } from './Item.js';
+import { GemItem } from './GemItem.js';
 
 export class TreasureChestItem extends Item {
     constructor(loadingManager) {
@@ -13,10 +14,11 @@ export class TreasureChestItem extends Item {
     }
 
     async init() {
-        const path = new URL('../models/treasure_chest_wooden_jewelry_box/scene.gltf', import.meta.url).href;
+        const path = new URL('../models/treasure_chest_wooden_jewelry_box/Chest.glb', import.meta.url).href;
         try {
             const gltf = await this.modelLoader.load(path);
             const model = gltf.scene;
+            this.animations = gltf.animations;
 
             // Scale to a consistent size
             const box = new THREE.Box3().setFromObject(model);
@@ -32,6 +34,7 @@ export class TreasureChestItem extends Item {
 
             model.traverse(n => {
                 if (n.isMesh) {
+                    console.log('Treasure Chest Part:', n.name);
                     n.castShadow = true;
                     n.receiveShadow = true;
 
@@ -49,6 +52,12 @@ export class TreasureChestItem extends Item {
             });
 
             this.group.add(model);
+
+            // Add blue gem inside the chest
+            this.blueGem = new GemItem(this.loadingManager, 0x0000ff);
+            this.blueGem.group.position.set(0, 0.05, 0); // Position inside the chest
+            this.blueGem.group.scale.set(0.8, 0.8, 0.8); // Make it fit inside
+            this.group.add(this.blueGem.group);
         } catch (error) {
             console.error('Error loading TreasureChestItem:', error);
         }

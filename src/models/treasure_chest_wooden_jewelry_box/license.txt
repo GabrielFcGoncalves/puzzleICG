@@ -1,11 +1,11 @@
 Model Information:
-* title:	Treasure Chest Wooden Jewelry Box
-* source:	https://sketchfab.com/3d-models/treasure-chest-wooden-jewelry-box-4d194b5c230b48779153427277f399d2
-* author:	Arkify 3D (https://sketchfab.com/arkify)
+* title:	Small Chest (Game Ready / 2K PBR)
+* source:	https://sketchfab.com/3d-models/small-chest-game-ready-2k-pbr-b3f4d08724d849abbcb096e31d5102f0
+* author:	Meerschaum Digital (https://sketchfab.com/meerschaumdigital)
 
 Model License:
-* license type:	CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)
-* requirements:	Author must be credited. No commercial use.
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
 
 If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
-This work is based on "Treasure Chest Wooden Jewelry Box" (https://sketchfab.com/3d-models/treasure-chest-wooden-jewelry-box-4d194b5c230b48779153427277f399d2) by Arkify 3D (https://sketchfab.com/arkify) licensed under CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)
+This work is based on "Small Chest (Game Ready / 2K PBR)" (https://sketchfab.com/3d-models/small-chest-game-ready-2k-pbr-b3f4d08724d849abbcb096e31d5102f0) by Meerschaum Digital (https://sketchfab.com/meerschaumdigital) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

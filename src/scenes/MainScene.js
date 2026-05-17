@@ -18,6 +18,8 @@ import { Pen } from '../objects/Pen.js';
 import { MetalPlatting } from '../objects/MetalPlatting.js';
 import { ModelLoader } from '../utils/ModelLoader.js';
 import { MetalWeight } from '../objects/MetalWeight.js';
+import { SnakeItem } from '../objects/SnakeItem.js';
+import { GemItem } from '../objects/GemItem.js';
 
 export class MainScene {
     constructor(camera, loadingManager, world) {
@@ -122,6 +124,11 @@ export class MainScene {
         this.objects.flashlightObj.setPosition(0.3, 0.4, -0.4);
         this.objects.cabinet.drawerGroups[0].add(this.objects.flashlightObj.group);
 
+        // --- Snake Statue (starts inside the bottom drawer) ---
+        this.objects.snakeItem = new SnakeItem(this.loadingManager);
+        this.objects.snakeItem.setPosition(0, -0.26, 0); // Raised to match new bottom
+        this.objects.cabinet.drawerGroups[1].add(this.objects.snakeItem.group);
+
         // --- Metal Weights ---
         // 1. Two on the small table (moved more to the right/forward by Z)
         const weight1 = new MetalWeight(100);
@@ -140,13 +147,24 @@ export class MainScene {
 
         // 3. One behind the statue
         const weight4 = new MetalWeight(500);
-        weight4.setPosition(-4.2, -1.7, -4.9);
+        weight4.setPosition(-4.6, -1.4, -5.2);
         this.scene.add(weight4.group);
 
         // 4. One below the pedestal in the middle of the room
         const weight5 = new MetalWeight(20);
-        weight5.setPosition(0, -1.7, 0.5); // Near the base of the center table
+        weight5.setPosition(0.8, -1.7, 0.5); // Near the base of the center table
         this.scene.add(weight5.group);
+
+        // --- Red Gem ---
+        this.objects.redGem = new GemItem(this.loadingManager);
+        this.objects.redGem.setPosition(0.4, -0.33, -0.1);
+        this.objects.cabinet.drawerGroups[1].add(this.objects.redGem.group);
+
+        // --- Green Gem ---
+        this.objects.greenGem = new GemItem(this.loadingManager, 0x00ff00);
+        this.objects.greenGem.setPosition(-0.74, 0.8, 0.9); // Bottom middle of puzzle box
+        this.objects.greenGem.group.scale.setScalar(1 / 1.75); // Counteract parent scale
+        this.objects.pBox.group.add(this.objects.greenGem.group);
 
         // --- Bird Proxy (Deferred) ---
         this.scene.add(this.birdProxy);

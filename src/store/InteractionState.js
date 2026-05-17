@@ -6,8 +6,10 @@ export class InteractionState {
         this.isTurningKey = false;
         this.isDraggingBird = false;
         this.isDraggingDoor = false;
+        this.isMirrorRotating = false;
         this.draggedDrawerIndex = -1;
         this.rotatedFooting = null;
+        this.activeMirror = null;
 
         // Mouse memory (captured at mousedown, consumed during mousemove)
         this.initialMouseX = 0;
@@ -27,8 +29,10 @@ export class InteractionState {
         this.isTurningKey = false;
         this.isDraggingBird = false;
         this.isDraggingDoor = false;
+        this.isMirrorRotating = false;
         this.draggedDrawerIndex = -1;
         this.rotatedFooting = null;
+        this.activeMirror = null;
         this.hoveredSlot = null;
     }
 }

@@ -73,7 +73,9 @@ export class DrawerSystem {
 
                 // Bottom Panel
                 const bottom = new THREE.Mesh(new THREE.BoxGeometry(def.w, t, def.d), drawerMat);
-                bottom.position.set(0, -def.h / 2 + t / 2, 0);
+                let bottomY = -def.h / 2 + t / 2;
+                if (i === 1) bottomY += 0.15; // Make bottom drawer bottom higher
+                bottom.position.set(0, bottomY, 0);
                 bottom.userData = { drawerIndex: i, isDrawerInside: true };
                 dGroup.add(bottom);
 

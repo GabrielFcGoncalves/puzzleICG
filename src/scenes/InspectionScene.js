@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { store } from '../store/Store.js';
 
 export class InspectionScene {
     constructor(renderer) {
@@ -26,12 +27,14 @@ export class InspectionScene {
         this.mouse = new THREE.Vector2();
         this.draggedPart = null;
         this.dragOffset = 0;
+        this.clock = new THREE.Clock();
     }
 
     open(itemData) {
         console.log("Opening Inspection for:", itemData.name);
         if (this.currentInspectedGroup) this.scene.remove(this.currentInspectedGroup);
 
+        this.currentInspectedItem = itemData.instance;
         this.currentInspectedGroup = itemData.instance.cloneGroup();
         this.currentInspectedGroup.position.set(0, 0, 0);
         this.currentInspectedGroup.rotation.set(0, 0, 0);
@@ -39,6 +42,10 @@ export class InspectionScene {
         // Ensure all materials are visible and not too transparent
         this.currentInspectedGroup.traverse(node => {
             if (node.isMesh) {
+                if (node.userData.isHitBox) {
+                    node.visible = false;
+                    return;
+                }
                 node.material = node.material.clone();
                 node.material.transparent = false;
                 node.material.opacity = 1.0;
@@ -67,6 +74,17 @@ export class InspectionScene {
         this.controls.update();
 
         this.scene.add(this.currentInspectedGroup);
+        
+        if (itemData.instance.animations) {
+            this.mixer = new THREE.AnimationMixer(this.currentInspectedGroup);
+            this.actions = {};
+            itemData.instance.animations.forEach(clip => {
+                this.actions[clip.name] = this.mixer.clipAction(clip);
+            });
+        } else {
+            this.mixer = null;
+            this.actions = {};
+        }
     }
 
     handleMouseDown(event) {
@@ -79,16 +97,54 @@ export class InspectionScene {
             let obj = hits[0].object;
             console.log("Clicked Inspection Part:", obj.name, obj.userData);
             
-            // Check if it's an interactive part
-            while (obj && obj !== this.scene) {
-                if (obj.userData.isTreasureLock) {
-                    this.draggedPart = obj;
-                    this.controls.enabled = false; // Disable orbit controls during drag
-                    this.startY = event.clientY;
-                    this.startRotationX = obj.rotation.x;
+            // Check if it's the gem
+            let tempObj = obj;
+            let isGem = false;
+            while (tempObj && tempObj !== this.scene) {
+                if (tempObj.userData.itemData && tempObj.userData.itemData.name === 'Gemstone') {
+                    isGem = true;
+                    // Find the gem's root group in the clone (direct child of chest)
+                    let itemGrp = tempObj;
+                    while (itemGrp && itemGrp.parent && itemGrp.parent !== this.currentInspectedGroup) {
+                        itemGrp = itemGrp.parent;
+                    }
+                    // Remove the clone from inspection scene
+                    if (itemGrp && itemGrp.parent) {
+                        itemGrp.parent.remove(itemGrp);
+                    }
+                    // Call store to pick up the original and add to inventory
+                    if (this.currentInspectedItem && this.currentInspectedItem.blueGem) {
+                        store.pickupItem(this.currentInspectedItem.blueGem.group);
+                        
+                        // Remove chest from inventory after gem is taken
+                        const chestIndex = store.ui.inventory.findIndex(i => i.instance === this.currentInspectedItem);
+                        if (chestIndex !== -1) {
+                            store.ui.inventory.splice(chestIndex, 1);
+                            if (store.uiManager) {
+                                store.uiManager.updateInventory(store.ui.inventory);
+                            }
+                        }
+                    } else {
+                        store.pickupItem(tempObj);
+                    }
                     return true;
                 }
-                obj = obj.parent;
+                tempObj = tempObj.parent;
+            }
+
+            // If not gem, and specific part is clicked, play animations
+            if (!isGem && obj.name === 'Small_Chest_Small_Chest_PBR_0003' && this.actions) {
+                if (this.actions['OpenTopPart']) {
+                    this.actions['OpenTopPart'].setLoop(THREE.LoopOnce);
+                    this.actions['OpenTopPart'].clampWhenFinished = true;
+                    this.actions['OpenTopPart'].play();
+                }
+                if (this.actions['OpenLock']) {
+                    this.actions['OpenLock'].setLoop(THREE.LoopOnce);
+                    this.actions['OpenLock'].clampWhenFinished = true;
+                    this.actions['OpenLock'].play();
+                }
+                return true;
             }
         }
         return false;
@@ -130,6 +186,10 @@ export class InspectionScene {
 
     update() {
         this.controls.update();
+        const delta = this.clock.getDelta();
+        if (this.mixer) {
+            this.mixer.update(delta);
+        }
     }
 
     render(renderer) {

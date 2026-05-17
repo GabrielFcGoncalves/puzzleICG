@@ -4,6 +4,12 @@ export class DoorDragHandler extends MouseDownHandler {
     canHandle(ctx, raycastResults) {
         const { allHits } = raycastResults;
         const hit = allHits.find(h => h.object.userData.isDoorHandle);
+        
+        if (hit && ctx.store.placedGems < 3) {
+            ctx.world.uiManager.setStatus("The door is locked. Find all 3 gems.");
+            return false;
+        }
+        
         return !!hit;
     }
 

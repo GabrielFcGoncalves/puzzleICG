@@ -40,6 +40,98 @@ export class InputSystem {
         globalThis.addEventListener('resize', (e) => handleResize(e, this.world));
         globalThis.addEventListener('contextmenu', (e) => handleContextMenu(e, this.world));
         this.controls.addEventListener('start', () => handleControlsStart(this.world));
+
+        // Debug menu for skipping stages
+        if (globalThis.document) {
+            const select = globalThis.document.getElementById('puzzle-stage');
+            if (select) {
+                // Add option for snake stage if it doesn't exist
+                if (!select.querySelector('option[value="6"]')) {
+                    const option = globalThis.document.createElement('option');
+                    option.value = "6";
+                    option.text = "Stage 6: Snake";
+                    select.appendChild(option);
+                }
+                select.addEventListener('change', (e) => {
+                    this.skipToStage(parseInt(e.target.value));
+                });
+            }
+        }
+    }
+
+    skipToStage(stage) {
+        console.log("Skipping to stage:", stage);
+        const puzzle = this.world.puzzle;
+        const pBox = this.world.mainScene ? this.world.mainScene.objects.pBox : null;
+        
+        if (!pBox) {
+            console.warn("PuzzleBox not found in mainScene objects!");
+            return;
+        }
+
+        switch(stage) {
+            case 1:
+                // Stage 1: Move to Pedestal
+                if (!puzzle.isBoxOnPedestal) {
+                    this.scene.attach(pBox.group);
+                    puzzle.isMovingPuzzleBox = true;
+                    pBox.group.position.set(1.85, -1, -1.6); // Teleport to pedestal
+                    puzzle.isBoxOnPedestal = true;
+                    puzzle.isMovingPuzzleBox = false;
+                    this.world.uiManager.setStatus("DEBUG: Box moved to pedestal");
+                }
+                break;
+            case 2:
+                // Stage 2: Open Scale
+                if (!puzzle.isBoxOnPedestal) {
+                    this.skipToStage(1); // Ensure it's on pedestal first
+                }
+                pBox.playAnimation('PressButton');
+                break;
+            case 3:
+                // Stage 3: Solve Scale (Balance)
+                if (!puzzle.isBoxOnPedestal) {
+                    this.skipToStage(1); // Ensure it's on pedestal first
+                }
+                if (!pBox.isSolved) {
+                    pBox.isSolved = true;
+                    pBox.playAnimation('OpenSide2');
+                    pBox.playAnimation('Board appear');
+                    this.world.uiManager.setStatus("DEBUG: Scale solved!");
+                }
+                break;
+            case 4:
+                // Stage 4: Solve Simon Game
+                if (!puzzle.isBoxOnPedestal) {
+                    this.skipToStage(1); // Ensure it's on pedestal first
+                }
+                if (!pBox.isSimonSolved) {
+                    pBox.isSimonSolved = true;
+                    pBox.playAnimation('OpenSide3');
+                    this.world.uiManager.setStatus("DEBUG: Simon game solved!");
+                }
+                break;
+            case 5:
+                // Stage 5: Solve Laser Puzzle
+                if (!puzzle.isBoxOnPedestal) {
+                    this.skipToStage(1); // Ensure it's on pedestal first
+                }
+                if (!pBox.isLaserPuzzleSolved) {
+                    pBox.isLaserPuzzleSolved = true;
+                    pBox.playAnimation('OpenSide4');
+                    this.world.uiManager.setStatus("DEBUG: Laser puzzle solved!");
+                }
+                break;
+            case 6:
+                // Stage 6: Solve Snake Stage
+                if (!puzzle.isBoxOnPedestal) {
+                    this.skipToStage(1); // Ensure it's on pedestal first
+                }
+                pBox.playAnimation('OpenSide5');
+                pBox.playAnimation('Lever');
+                this.world.uiManager.setStatus("DEBUG: Snake stage solved!");
+                break;
+        }
     }
 
     handleGlobalMouseMove(e) {
@@ -59,6 +151,10 @@ export class InputSystem {
                 const itemData = this.store.ui.inventory[this.store.ui.draggedInventoryIndex];
                 if (target && target.userData.isScalePlate && itemData && itemData.name.includes('Weight')) {
                     this.updatePreview(target, itemData.instance);
+                } else if (target && target.name === 'Circle021_1' && itemData && itemData.name === 'Snake Statue') {
+                    this.updateSnakePreview(target, itemData.instance);
+                } else if (target && target.userData.isGemSlot && itemData && itemData.name === 'Gemstone') {
+                    this.updateGemPreview(target, itemData.instance);
                 } else {
                     this.removePreview();
                 }
@@ -92,8 +188,14 @@ export class InputSystem {
 
     findInteractionTarget(hitObj) {
         let search = hitObj;
+        console.log("findInteractionTarget: hitObj name =", hitObj.name);
         while (search) {
-            if (search.userData.isLock || search.userData.isStand || search.userData.isPainting || search.userData.isScalePlate) {
+            if (search.name === 'Circle021_1') {
+                console.log("findInteractionTarget: found match by name =", search.name);
+                return search;
+            }
+            if (search.userData.isLock || search.userData.isStand || search.userData.isPainting || search.userData.isScalePlate || search.userData.isGemSlot) {
+                console.log("findInteractionTarget: found match by userData =", search.name);
                 return search;
             }
             search = search.parent;
@@ -103,12 +205,14 @@ export class InputSystem {
 
     handleGlobalMouseUp(e) {
         if (this.store.ui.draggedInventoryIndex !== -1) {
+            console.log("handleGlobalMouseUp: dragging item index =", this.store.ui.draggedInventoryIndex);
             const slots = this.world.uiManager.slots;
             if (slots[this.store.ui.draggedInventoryIndex]) {
                 slots[this.store.ui.draggedInventoryIndex].style.opacity = '1';
             }
 
             const itemData = this.store.ui.inventory[this.store.ui.draggedInventoryIndex];
+            console.log("handleGlobalMouseUp: itemData =", itemData.name);
 
             // Raycast for drop target
             this.mouse.x = (e.clientX / globalThis.innerWidth) * 2 - 1;
@@ -116,6 +220,7 @@ export class InputSystem {
             this.raycaster.setFromCamera(this.mouse, this.camera);
 
             const hits = this.raycaster.intersectObjects(this.scene.children, true);
+            console.log("handleGlobalMouseUp: hits length =", hits.length);
             if (hits.length > 0) {
                 const target = this.findInteractionTarget(hits[0].object);
                 this.processDrop(target, itemData);
@@ -169,6 +274,7 @@ export class InputSystem {
     }
 
     processDrop(target, itemData) {
+        console.log("processDrop: target =", target ? target.name : 'null', "item =", itemData.name);
         if (!target) return;
 
         // Scale Plate Drop Logic
@@ -214,6 +320,77 @@ export class InputSystem {
             this.store.ui.inventory.splice(this.store.ui.draggedInventoryIndex, 1);
         }
 
+        // PuzzleBox Drop Logic (Snake Statue)
+        if (target.name === 'Circle021_1' && itemData.name === 'Snake Statue') {
+            const placedSnake = itemData.instance.cloneGroup();
+            
+            // Position on top of target
+            const worldPos = new THREE.Vector3();
+            const box = new THREE.Box3().setFromObject(target);
+            box.getCenter(worldPos);
+            
+            placedSnake.position.set(worldPos.x, box.max.y, worldPos.z);
+            
+            placedSnake.userData.isItem = false;
+            placedSnake.userData.isPickupable = false;
+            placedSnake.userData.isStaticPuzzlePart = true;
+            placedSnake.userData.isPlacedSnake = true;
+            
+            this.scene.add(placedSnake);
+            this.world.mainScene.enableShadows(placedSnake);
+            
+            this.world.uiManager.setStatus("SNAKE STATUE PLACED ON PUZZLEBOX");
+            this.store.ui.inventory.splice(this.store.ui.draggedInventoryIndex, 1);
+
+            // Play animation OpenSide5 and Lever
+            const puzzleBox = target.userData.puzzleBoxInstance;
+            if (puzzleBox) {
+                puzzleBox.playAnimation('OpenSide5');
+                puzzleBox.playAnimation('Lever'); // Guessing the name 'Lever'
+            }
+        }
+
+        // Gem Slot Drop Logic
+        if (target.userData.isGemSlot && itemData.name === 'Gemstone') {
+            const itemInstance = itemData.instance;
+            if (itemInstance.color === target.userData.color) {
+                const placedGem = itemInstance.cloneGroup();
+                placedGem.position.copy(target.position);
+                placedGem.position.y -= 0.03;
+                if (itemInstance.color === 0x0000ff) {
+                    placedGem.position.y -= 0.02; // Lower blue gem more
+                }
+                if (itemInstance.color === 0xff0000) {
+                    placedGem.position.y -= 0.03; // Lower red gem more
+                    placedGem.position.z -= 0.05; // Make red gem z more negative
+                }
+                target.parent.add(placedGem);
+                
+                this.world.uiManager.setStatus("GEM PLACED SUCCESSFULLY!");
+                this.store.placedGems = (this.store.placedGems || 0) + 1;
+                
+                // Add SpotLight instead of glowing aura
+                const color = target.userData.color;
+                const spotLight = new THREE.SpotLight(color, 50, 5, Math.PI / 2, 0.5);
+                spotLight.position.copy(target.position);
+                spotLight.position.z -= 0.02; // Move slightly into the room
+                
+                const lightTarget = new THREE.Object3D();
+                lightTarget.position.copy(spotLight.position);
+                lightTarget.position.z -= 1.0; // Point into the room (negative Z)
+                
+                target.parent.add(lightTarget);
+                spotLight.target = lightTarget;
+                target.parent.add(spotLight);
+                
+                this.store.ui.inventory.splice(this.store.ui.draggedInventoryIndex, 1);
+                this.world.uiManager.updateInventory(this.store.ui.inventory);
+            } else {
+                this.world.uiManager.setStatus("COLOR DOES NOT MATCH!");
+            }
+            return;
+        }
+
         // Update UI slots
         this.world.uiManager.updateInventory(this.store.ui.inventory);
     }
@@ -231,6 +408,7 @@ export class InputSystem {
                     n.material.opacity = 0.5;
                     n.castShadow = false;
                     n.receiveShadow = false;
+                    n.raycast = () => {}; // Disable raycasting on preview
                 }
             });
             const puzzleBox = target.userData.puzzleBoxInstance;
@@ -266,6 +444,56 @@ export class InputSystem {
             this.previewMesh.position.set(localPos.x + offset.x, localPos.y + 0.005, localPos.z + offset.z);
             this.previewMesh.scale.setScalar(0.4 / 1.75); 
         } 
+    }
+
+    updateSnakePreview(target, itemInstance) {
+        if (!this.previewMesh) {
+            this.previewMesh = itemInstance.cloneGroup();
+            
+            this.previewMesh.traverse(n => {
+                if (n.isMesh) {
+                    n.material = n.material.clone();
+                    n.material.transparent = true;
+                    n.material.opacity = 0.5;
+                    n.castShadow = false;
+                    n.receiveShadow = false;
+                    n.raycast = () => {}; // Disable raycasting on preview
+                }
+            });
+            this.scene.add(this.previewMesh);
+        }
+        
+        const worldPos = new THREE.Vector3();
+        const box = new THREE.Box3().setFromObject(target);
+        box.getCenter(worldPos);
+        
+        this.previewMesh.position.set(worldPos.x, box.max.y, worldPos.z);
+    }
+
+    updateGemPreview(target, itemInstance) {
+        if (!this.previewMesh) {
+            this.previewMesh = itemInstance.cloneGroup();
+            this.previewMesh.traverse(n => {
+                if (n.isMesh) {
+                    n.material = n.material.clone();
+                    n.material.transparent = true;
+                    n.material.opacity = 0.5;
+                    n.castShadow = false;
+                    n.receiveShadow = false;
+                    n.raycast = () => {}; // Disable raycasting on preview
+                }
+            });
+            target.parent.add(this.previewMesh);
+        }
+        this.previewMesh.position.copy(target.position);
+        this.previewMesh.position.y -= 0.03;
+        if (itemInstance.color === 0x0000ff) {
+            this.previewMesh.position.y -= 0.02; // Lower blue gem more
+        }
+        if (itemInstance.color === 0xff0000) {
+            this.previewMesh.position.y -= 0.02; // Lower red gem more
+            this.previewMesh.position.z -= 0.05; // Make red gem z more negative
+        }
     }
 
     removePreview() {

@@ -29,10 +29,21 @@ export class Item {
     }
 
     cloneGroup() {
-        const savedInstance = this.group.userData.itemInstance;
-        this.group.userData.itemInstance = null;
+        const savedInstances = new Map();
+        
+        this.group.traverse(node => {
+            if (node.userData && node.userData.itemInstance) {
+                savedInstances.set(node, node.userData.itemInstance);
+                node.userData.itemInstance = null;
+            }
+        });
+        
         const clone = this.group.clone(true);
-        this.group.userData.itemInstance = savedInstance;
+        
+        savedInstances.forEach((instance, node) => {
+            node.userData.itemInstance = instance;
+        });
+        
         return clone;
     }
 

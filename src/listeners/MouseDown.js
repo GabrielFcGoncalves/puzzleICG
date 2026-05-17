@@ -7,7 +7,10 @@ import { DrawerDragHandler } from './mousedown/DrawerDragHandler.js';
 import { BirdRotationHandler } from './mousedown/BirdRotationHandler.js';
 import { DoorDragHandler } from './mousedown/DoorDragHandler.js';
 import { PuzzleBoxButtonHandler } from './mousedown/PuzzleBoxButtonHandler.js';
+import { PuzzleBoxColorPartHandler } from './mousedown/PuzzleBoxColorPartHandler.js';
 import { WeightPlateDragHandler } from './mousedown/WeightPlateDragHandler.js';
+import { PuzzleBoxMirrorHandler } from './mousedown/PuzzleBoxMirrorHandler.js';
+import { PuzzleBoxLeverHandler } from './mousedown/PuzzleBoxLeverHandler.js';
 
 // ============================================================================
 // HANDLER REGISTRY
@@ -20,6 +23,9 @@ import { WeightPlateDragHandler } from './mousedown/WeightPlateDragHandler.js';
 const MOUSEDOWN_HANDLERS = [
     new WeightPlateDragHandler(),
     new PuzzleBoxButtonHandler(),
+    new PuzzleBoxLeverHandler(),
+    new PuzzleBoxColorPartHandler(),
+    new PuzzleBoxMirrorHandler(),
     new FlashlightSwitchHandler(),
     new PadlockButtonHandler(),
     new PadlockWheelHandler(),

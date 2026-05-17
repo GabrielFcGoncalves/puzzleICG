@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { BirdItem } from '../BirdItem.js';
 import { Paper } from '../Paper.js';
 import { TreasureChestItem } from '../TreasureChestItem.js';
+import { SnakeItem } from '../SnakeItem.js';
 
 
 export class FurnitureSystem {
@@ -22,6 +23,8 @@ export class FurnitureSystem {
 
         // Bookshelf -> Angel Statue
         this.createAngelStatue();
+
+
 
         // Wall hole content (treasure chest + clue paper)
         this.createWallHoleContent();
@@ -133,6 +136,8 @@ export class FurnitureSystem {
             console.error('Error loading angel statue:', error);
         }
     }
+
+
 
     async createPosts() {
         const postPath = new URL('../../models/low_poly_wood_post/scene.gltf', import.meta.url).href;

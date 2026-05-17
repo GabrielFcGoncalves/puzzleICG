@@ -70,6 +70,7 @@ export class MetalWeight extends Item {
         };
 
         this.group.userData.weight = this.weightType;
+        this.group.userData.isSmallProp = true;
 
         this.group.add(mesh);
     }

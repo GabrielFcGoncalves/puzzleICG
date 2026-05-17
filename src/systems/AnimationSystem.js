@@ -154,6 +154,13 @@ export class AnimationSystem {
                         this.store.ui.shadowNeedsRefresh = true; // Unfreeze shadows for movement
                         this.world.uiManager.setStatus("ALIGNMENT CORRECT - A MECHANISM ACTIVATED");
                         
+                        // Remove Iron Bird from inventory
+                        const index = this.store.ui.inventory.findIndex(item => item.name === 'Iron Bird');
+                        if (index !== -1) {
+                            this.store.ui.inventory.splice(index, 1);
+                            this.world.uiManager.updateInventory(this.store.ui.inventory);
+                        }
+                        
                         // Cinematic: Look at the moving angel
                         const angel = this.mainScene.objects.room.angel;
                         if (angel) {
