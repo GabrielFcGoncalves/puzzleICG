@@ -30,6 +30,8 @@ export class World {
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.controls.enablePan = false;
         this.controls.maxPolarAngle = Math.PI * 0.6;
+        this.controls.target.set(0, 1.0, 0);
+        this.controls.update();
 
         this.stats = new Stats();
         document.body.appendChild(this.stats.dom);

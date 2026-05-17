@@ -20,7 +20,11 @@ export class PuzzleBoxButtonHandler extends MouseDownHandler {
 
     handle(ctx) {
         if (ctx.puzzleBox) {
-            ctx.puzzleBox.playPressedButton();
+            if (ctx.puzzle.isBoxOnPedestal) {
+                ctx.puzzleBox.playPressedButton();
+            } else {
+                ctx.world.uiManager.setStatus("The button cannot be pressed yet. Move the box to the pedestal first.");
+            }
         }
     }
 }

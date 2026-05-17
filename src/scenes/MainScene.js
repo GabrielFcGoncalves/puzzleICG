@@ -169,6 +169,12 @@ export class MainScene {
         // --- Bird Proxy (Deferred) ---
         this.scene.add(this.birdProxy);
 
+        // --- Hint Arrow ---
+        const arrowDir = new THREE.Vector3(0, 0, -1);
+        const arrowOrigin = new THREE.Vector3(0, -1.69, -2.5);
+        this.objects.hintArrow = new THREE.ArrowHelper(arrowDir, arrowOrigin, 0.5, 0x00ff00, 0.15, 0.1);
+        this.scene.add(this.objects.hintArrow);
+
         this.enableShadows(this.scene);
     }
 
@@ -283,6 +289,10 @@ export class MainScene {
         this.lights.chanBack.update();
         if (this.objects.pBox) {
             this.objects.pBox.update(delta);
+        }
+        
+        if (this.objects.hintArrow) {
+            this.objects.hintArrow.visible = this.world.uiState.isEthereal;
         }
     }
 

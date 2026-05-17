@@ -16,6 +16,11 @@ export class AnimationSystem {
         // Frustum culling for logic
         this.frustum = new THREE.Frustum();
         this.projScreenMatrix = new THREE.Matrix4();
+
+        // Camera collision properties
+        this.previousCorners = [];
+        this.previousCameraPosition = this.camera.position.clone();
+        this.collisionDetected = false;
     }
 
     start() {
@@ -51,9 +56,12 @@ export class AnimationSystem {
                 this.world.physicsSystem.update(delta);
             }
 
+
+            this.controls.maxDistance = 1000; // Reset to allow movement
             this.controls.update();
-
-
+            
+            this.camera.updateMatrixWorld();
+            this.checkCameraCollision();
 
             this.renderer.render(this.mainScene.scene, this.camera);
         }
@@ -242,8 +250,8 @@ export class AnimationSystem {
             const worldPos = new THREE.Vector3();
             pBox.group.getWorldPosition(worldPos);
             
-            // Shift camera more to the left (negative X) as it was too far to the right
-            const camOffset = new THREE.Vector3(-0.8, 2.0, 3);
+            // Shift camera more to the left and higher
+            const camOffset = new THREE.Vector3(-2.0, 8.0, 3.0);
             const targetCamPos = worldPos.clone().add(camOffset);
             
             this.camera.position.lerp(targetCamPos, 0.3);
@@ -259,8 +267,7 @@ export class AnimationSystem {
                 this.store.puzzle.isBoxOnPedestal = true;
                 this.world.uiManager.setStatus("BOX PLACED ON PEDESTAL - READY FOR INSPECTION");
                 
-                // Zoom to the box at its new location
-                this.store.zoomTo(this.store.puzzle.pBoxTargetPos, 2.2, null, new THREE.Vector3(-1, 2.0, 3));
+                // Keep camera at its last position from the movement
                 
                 this.controls.minAzimuthAngle = -Infinity;
                 this.controls.maxAzimuthAngle = Infinity;
@@ -279,6 +286,51 @@ export class AnimationSystem {
 
         door.doorMesh.rotation.y = this.store.puzzle.doorRotation;
         this._lastDoorRotation = this.store.puzzle.doorRotation;
+    }
+
+    checkCameraCollision() {
+        const camPos = this.camera.position;
+        const moveDir = camPos.clone().sub(this.previousCameraPosition);
+        const moveLength = moveDir.length();
+        
+        if (moveLength < 0.001) return;
+        
+        moveDir.normalize();
+        
+        const raycaster = new THREE.Raycaster();
+        raycaster.set(this.previousCameraPosition, moveDir);
+        raycaster.far = moveLength;
+        
+        const collidables = this.getCollidableObjects();
+        const intersects = raycaster.intersectObjects(collidables, true);
+        
+        if (intersects.length > 0) {
+            // Collision detected along the movement path!
+            this.camera.position.copy(this.previousCameraPosition);
+            this.camera.updateMatrixWorld();
+            
+            this.collisionDetected = true;
+            console.log("Collision detected! Reverting to previous position.");
+        } else {
+            this.collisionDetected = false;
+        }
+        
+        this.previousCameraPosition.copy(this.camera.position);
+    }
+
+    getCollidableObjects() {
+        const collidables = [];
+        const room = this.mainScene.objects.room;
+        const cabinet = this.mainScene.objects.cabinet;
+        const stand = this.mainScene.objects.stand;
+        const door = this.mainScene.objects.door;
+        
+        if (room && room.group) collidables.push(room.group);
+        if (cabinet && cabinet.group) collidables.push(cabinet.group);
+        if (stand && stand.group) collidables.push(stand.group);
+        if (door && door.group) collidables.push(door.group);
+        
+        return collidables;
     }
 
 }
